@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -24,7 +26,22 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}<Toaster richColors /></body>
+      <body className="min-h-full flex flex-col">
+        <Suspense
+          fallback={
+            <main
+              className="mx-auto w-full max-w-7xl space-y-6 p-8"
+              aria-label="Loading rent account"
+            >
+              <Skeleton className="h-12 w-64" />
+              <Skeleton className="h-64 w-full" />
+            </main>
+          }
+        >
+          {children}
+        </Suspense>
+        <Toaster richColors />
+      </body>
     </html>
   );
 }

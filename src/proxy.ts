@@ -12,15 +12,19 @@ export async function proxy(request: NextRequest) {
         setAll(values) {
           values.forEach(({ name, value }) => request.cookies.set(name, value));
           response = NextResponse.next({ request });
-          values.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
+          values.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options)
+          );
         },
       },
-    },
+    }
   );
   await client.auth.getUser();
   return response;
 }
 
 export const config = {
-  matcher: ['/((?!_next|api/webhooks|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)'],
+  matcher: [
+    '/((?!_next|api/webhooks|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
+  ],
 };

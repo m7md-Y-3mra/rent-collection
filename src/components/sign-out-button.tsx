@@ -16,8 +16,15 @@ export function SignOutButton() {
       toast.success('Signed out.');
       router.replace('/login');
       router.refresh();
-    } catch { toast.error('Could not sign out. Try again.'); }
-    finally { setPending(false); }
+    } catch {
+      toast.error('Could not sign out. Try again.');
+    } finally {
+      setPending(false);
+    }
   }
-  return <Button variant="outline" disabled={pending} onClick={signOut}>{pending ? 'Signing out…' : 'Sign out'}</Button>;
+  return (
+    <Button variant="outline" disabled={pending} onClick={signOut}>
+      {pending ? 'Signing out…' : 'Sign out'}
+    </Button>
+  );
 }

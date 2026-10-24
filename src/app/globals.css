@@ -128,3 +128,35 @@
     @apply font-sans;
   }
 }
+/* Blue-green account ledger: quiet surfaces, clear receipt-like money columns. */
+:root {
+  --background: #f2f7fa;
+  --foreground: #183447;
+  --primary: #006b70;
+  --primary-foreground: #ffffff;
+  --secondary: #e0eff0;
+  --secondary-foreground: #145358;
+  --muted: #eaf1f5;
+  --muted-foreground: #506776;
+  --accent: #e0eff0;
+  --accent-foreground: #145358;
+  --border: #d4e1e8;
+  --input: #c4d5df;
+  --ring: #007e84;
+  --radius: 0.75rem;
+  --font-sans: var(--font-geist-sans);
+}
+
+@layer base {
+  body { font-variant-numeric: tabular-nums; }
+  a:focus-visible { outline: 2px solid var(--ring); outline-offset: 4px; }
+}
+
+@layer components {
+  .eyebrow { @apply mb-2 text-xs font-semibold uppercase tracking-widest text-primary; }
+  .page-title { @apply mb-3 text-3xl font-semibold tracking-tight sm:text-4xl; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}

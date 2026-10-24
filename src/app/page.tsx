@@ -7,5 +7,10 @@ export default async function Home() {
   if (!actor) redirect('/login');
   if (actor.kind === 'member') redirect('/dashboard');
   if (actor.kind === 'tenant') redirect('/portal');
-  return <main className="mx-auto max-w-xl space-y-6 p-8"><h1>Your account has no access.</h1><SignOutButton /></main>;
+  return (
+    <main className="mx-auto max-w-xl space-y-6 p-8">
+      <h1>Your account has no access.</h1>
+      <SignOutButton />
+    </main>
+  );
 }
