@@ -163,6 +163,8 @@ General rule (from the user): **do not add any rejection or validation the brief
 - OQ3: parseRinggitToSen when the sen value is greater than Number.MAX_SAFE_INTEGER → throws an Error (user decision).
 - A28: service_role has no grants on public tables. The admin client (secret key) is used only for auth.admin and Storage; all table access goes through Prisma (user decision).
 - A26: `supabase/seed.sql` is committed empty, so `db reset` stays clean with the current `config.toml` (accepted).
+- Q6: Tenant portal reads its data in the browser with supabase-js: one client component, ONE embedded select (tenant → leases → units, invoices → payment_allocations, payments); loading skeleton, empty and error states; dates formatted only in the browser with Intl and timeZone 'Asia/Kuala_Lumpur'. Pay now still calls POST /api/leases/:leaseId/gateway-bills. Phone update is supabase-js update of tenants.phone only (user decision).
+- Q7: Part 05 builds on main and merges main after part 04 is merged. Until then part 05 must not create or edit part 04 files (gateway-bills, collections and webhook routes, /payments/return page, services/gateway.ts, services/reports.ts, lib/gateway/*) and must not touch supabase/migrations/ or prisma/. Pay now and the dashboard report are written against the brief's response shapes and tested after the merge (user decision).
 
 ## Overrides (brief beats defaults)
 - Columns end in `_sen`, not `_cents`. JSON amounts are integer numbers, not strings.
@@ -183,7 +185,7 @@ General rule (from the user): **do not add any rejection or validation the brief
 | 02 | billing: `lib/billing.ts` + unit tests under 3 TZs (pure, no DB; can run in parallel with 01) | R9–R18 | 20 | done |
 | 03 | leases-payments: POST/GET lease, record/approve/reject/void, allocation, cap, slip check + cleanup, audit, concurrency tests, `npm run seed` (needs 01 and 02) | R5–R8, R19–R29, R48, R49, R50 | 50 | done |
 | 04 | online-report: gateway bills, webhook, `/payments/return`, collections report endpoint, `gateway-sim.mjs` | R30–R37, R48 | 30 | done |
-| 05 | ui: staff dashboard, leases list, lease page, record form, approve/reject/void dialogs, tenant portal, pay now, phone edit, MYT display | R3, R54–R60 | 20 | todo |
+| 05 | ui: staff dashboard, leases list, lease page, record form, approve/reject/void dialogs, tenant portal, pay now, phone edit, MYT display | R3, R54–R60 | 20 | planned |
 | 06 | write-ups: REVIEW.md, DECISIONS.md, README, ai-logs | R61–R63 | 10 | todo |
 
 ## Edge-case matrix
@@ -282,12 +284,12 @@ General rule (from the user): **do not add any rejection or validation the brief
 | E91 | 04 | Online payment larger than lease unpaid (other payment settled first) | allocated to remaining invoices; leftover in unapplied_sen | tests/gateway/webhook.test.ts | done |
 | E92 | 04 | GET /payments/return?bill_id=X&paid=true for pending bill | shows pending; bill and payments unchanged | tests/gateway/return.test.ts | done |
 | E93 | 04 | Webhook logs | no payload or key in logs (code check) | tests/gateway/webhook.test.ts | done |
-| E94 | 05 | Browser TZ America/New_York views lease page and payment times | dates/times shown in MYT; no hydration warning | (set in plan) | todo |
-| E95 | 05 | Record form: amount "1,500.50" → 150050 sent; "1.234" → inline error, no request | as stated | (set in plan) | todo |
-| E96 | 05 | Record form receivedAt typed "2026-03-01 00:30" in MYT | sent as 2026-03-01T00:30:00+08:00 regardless of browser TZ | (set in plan) | todo |
-| E97 | 05 | Dashboard overdue count + last 6 months collections | numbers match API/invoiceStatus | (set in plan) | todo |
-| E98 | 05 | Void/reject dialogs require confirmation and reason; toasts on success and error | as stated | (set in plan) | todo |
-| E99 | 05 | Tenant phone edit via supabase-js from browser | updated; toast | (set in plan) | todo |
+| E94 | 05 | Browser TZ America/New_York views lease page and payment times | dates/times shown in MYT; no hydration warning | tests/ui/format.test.ts | planned |
+| E95 | 05 | Record form: amount "1,500.50" → 150050 sent; "1.234" → inline error, no request | as stated | tests/ui/record-payment.test.ts | planned |
+| E96 | 05 | Record form receivedAt typed "2026-03-01 00:30" in MYT | sent as 2026-03-01T00:30:00+08:00 regardless of browser TZ | tests/ui/record-payment.test.ts | planned |
+| E97 | 05 | Dashboard overdue count + last 6 months collections | numbers match API/invoiceStatus | tests/ui/dashboard.test.ts | planned |
+| E98 | 05 | Void/reject dialogs require confirmation and reason; toasts on success and error | as stated | tests/ui/decide.test.ts | planned |
+| E99 | 05 | Tenant phone edit via supabase-js from browser | updated; toast | tests/ui/portal.test.ts | planned |
 | E101 | 01 | Catalog check: anon has no privilege on any public table (SELECT/INSERT/UPDATE/DELETE/TRUNCATE/REFERENCES/TRIGGER), sequence, or function in public/private; anon Data API select on every table | all false; error or 0 rows on every table | tests/db/anon-catalog.test.ts | done |
 | E102 | 01 | Invoice shape: rent invoice with null period_index or null period_start; deposit with period_index 0 | rejected by `invoices_kind_shape` check | tests/db/invoice-shape.test.ts | done |
 | E103 | 01 | Fresh clone: `npm install` before `.env.local` exists (postinstall `prisma generate`), then `npm run build` | install succeeds and generates the client; build passes | manual + final-check fresh clone | done |

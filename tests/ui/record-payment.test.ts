@@ -1,0 +1,45 @@
+import { expect, it } from 'vitest';
+import { buildRecordPaymentBody } from '@/lib/ui/record-payment';
+const base = {
+  method: 'cash' as const,
+  receivedAtLocal: '2026-03-01 00:30',
+  hasFile: false,
+};
+it('E95 ringgit parsing and inline errors', () => {
+  expect(buildRecordPaymentBody({ ...base, amount: '1,500.50' })).toEqual({
+    ok: true,
+    body: {
+      amountSen: 150050,
+      method: 'cash',
+      receivedAt: '2026-03-01T00:30:00+08:00',
+    },
+  });
+  expect(buildRecordPaymentBody({ ...base, amount: '1.234' })).toMatchObject({
+    ok: false,
+    errors: { amount: expect.any(String) },
+  });
+});
+it('E96 MYT input is independent of device timezone and validates dates', () => {
+  const previous = process.env.TZ;
+  try {
+    for (const tz of ['UTC', 'Asia/Kuala_Lumpur', 'America/New_York']) {
+      process.env.TZ = tz;
+      for (const receivedAtLocal of ['2026-03-01 00:30', '2026-03-01T00:30'])
+        expect(
+          buildRecordPaymentBody({ ...base, amount: '7', receivedAtLocal })
+        ).toMatchObject({
+          ok: true,
+          body: { receivedAt: '2026-03-01T00:30:00+08:00' },
+        });
+    }
+  } finally {
+    process.env.TZ = previous;
+  }
+  expect(
+    buildRecordPaymentBody({
+      ...base,
+      amount: '7',
+      receivedAtLocal: '2026-02-30 10:00',
+    })
+  ).toMatchObject({ ok: false, errors: { receivedAt: expect.any(String) } });
+});
