@@ -180,7 +180,7 @@ General rule (from the user): **do not add any rejection or validation the brief
 | # | Part | Requirements | Minutes | Status |
 |---|---|---|---|---|
 | 01 | foundation: Next 16 + Prisma 7 + Supabase clients, full schema, grants, RLS, storage bucket + policies, audit/payment triggers, auth helper (Bearer + cookie, roles, 401/404/403), `.env.example`, empty seed.sql | R1, R2, R4, R38–R47, R51–R53 | 40 | done |
-| 02 | billing: `lib/billing.ts` + unit tests under 3 TZs (pure, no DB; can run in parallel with 01) | R9–R18 | 20 | built |
+| 02 | billing: `lib/billing.ts` + unit tests under 3 TZs (pure, no DB; can run in parallel with 01) | R9–R18 | 20 | done |
 | 03 | leases-payments: POST/GET lease, record/approve/reject/void, allocation, cap, slip check + cleanup, audit, concurrency tests, `npm run seed` (needs 01 and 02) | R5–R8, R19–R29, R48, R49, R50 | 50 | done |
 | 04 | online-report: gateway bills, webhook, `/payments/return`, collections report endpoint, `gateway-sim.mjs` | R30–R37, R48 | 30 | todo |
 | 05 | ui: staff dashboard, leases list, lease page, record form, approve/reject/void dialogs, tenant portal, pay now, phone edit, MYT display | R3, R54–R60 | 20 | todo |
@@ -189,25 +189,25 @@ General rule (from the user): **do not add any rejection or validation the brief
 ## Edge-case matrix
 | ID | Part | Scenario | Expected result | Test file | Status |
 |---|---|---|---|---|---|
-| E01 | 02 | generateSchedule Aisyah: 2026-01-31..2026-07-15, rent 150000, deposit 300000 | 7 items: deposit null-periods due 2026-01-31 300000; p0 01-31..02-27 due 01-31 150000; p1 02-28..03-30; p2 03-31..04-29; p3 04-30..05-30; p4 05-31..06-29 (all 150000); p5 06-30..07-15 due 06-30 77419 | tests/billing/schedule.test.ts | built |
-| E02 | 02 | Ben: 2026-01-01..2026-04-15, rent 100029, deposit 0 | No deposit. p0 01-01..01-31, p1 02-01..02-28, p2 03-01..03-31 each 100029; p3 04-01..04-15 = 100029×15/30 = 50014.5 → 50015 (half up) | tests/billing/schedule.test.ts | built |
-| E03 | 02 | Probe: 2026-02-28..2027-02-27, rent 200000, deposit 400000 | deposit + 12 periods; anchors 28th each month; p11 2027-01-28..2027-02-27 full → 200000 | tests/billing/schedule.test.ts | built |
-| E04 | 02 | Leap: start 2028-01-31, end 2028-03-30, rent 150000, deposit 0 | anchors 01-31, 02-29, 03-31; p0 01-31..02-28, p1 02-29..03-30 full → 150000; 2 periods | tests/billing/schedule.test.ts | built |
-| E05 | 02 | Start 2024-02-29, end 2025-03-28, rent 100000 | anchor 12 = 2025-02-28, anchor 13 = 2025-03-29 (counted from start, not previous anchor); p12 2025-02-28..2025-03-28 full → 100000 | tests/billing/schedule.test.ts | built |
-| E06 | 02 | endDate = startDate: 2026-03-10..2026-03-10, rent 310000, deposit 0 | 1 period 03-10..03-10, full period 03-10..04-09 = 31 days, amount 310000×1/31 = 10000 | tests/billing/schedule.test.ts | built |
-| E07 | 02 | Last period exactly full: 2026-01-01..2026-01-31 rent 150000 | 1 period 01-01..01-31 amount 150000 | tests/billing/schedule.test.ts | built |
-| E08 | 02 | Prorate rounds to 0: 2026-01-01..2026-01-01, rent 1 | 1 period amount 0 (1×1/31 → 0), still returned | tests/billing/schedule.test.ts | built |
-| E09 | 02 | Validation: start "2026-02-30", "2026-2-03", "2026/02/03", end before start, rent 0, rent 1.5, rent -100, deposit -1, deposit 0.5 | each throws Error | tests/billing/schedule.test.ts | built |
-| E10 | 02 | depositSen 0 | no deposit invoice; first item is p0 | tests/billing/schedule.test.ts | built |
-| E11 | 02 | Large rent 900000000000 × 16/31 proration | exact BigInt half-up result, integer | tests/billing/schedule.test.ts | built |
-| E12 | 02 | invoiceStatus due 2026-03-01 amount 1000 paid 0; now 2026-03-01T15:59:59.999Z vs 2026-03-01T16:00:00Z | unpaid vs overdue | tests/billing/status.test.ts | built |
-| E13 | 02 | invoiceStatus paid 1000 (and 1500) of 1000, now long after due | paid | tests/billing/status.test.ts | built |
-| E14 | 02 | paid 500 of 1000; now before overdue vs after | partially_paid vs overdue | tests/billing/status.test.ts | built |
-| E15 | 02 | now 2026-02-28T17:00:00Z (= 03-01 01:00 MYT), due 2026-03-01 | unpaid (today = due date, not after) | tests/billing/status.test.ts | built |
-| E16 | 02 | All billing tests under TZ=UTC, Asia/Kuala_Lumpur, America/New_York (incl. US DST dates 2026-03-08, 2026-11-01) | identical results | tests/billing/purity.test.ts | built |
-| E17 | 02 | parseRinggitToSen "1,500.50", "1.15", "7", "  12.3 ", "1,234,567.89", "0", "0.05" | 150050, 115, 700, 1230, 123456789, 0, 5 | tests/billing/parse.test.ts | built |
-| E18 | 02 | parseRinggitToSen "", "-5", "1.234", "1e3", "RM 10", "1,23", "1,5000", ",500", "1.", ".5", "1 000", "12,34.5" | each throws Error | tests/billing/parse.test.ts | built |
-| E19 | 02 | billing.ts imports | no imports from next, react, supabase, prisma; no I/O | tests/billing/purity.test.ts | built |
+| E01 | 02 | generateSchedule Aisyah: 2026-01-31..2026-07-15, rent 150000, deposit 300000 | 7 items: deposit null-periods due 2026-01-31 300000; p0 01-31..02-27 due 01-31 150000; p1 02-28..03-30; p2 03-31..04-29; p3 04-30..05-30; p4 05-31..06-29 (all 150000); p5 06-30..07-15 due 06-30 77419 | tests/billing/schedule.test.ts | done |
+| E02 | 02 | Ben: 2026-01-01..2026-04-15, rent 100029, deposit 0 | No deposit. p0 01-01..01-31, p1 02-01..02-28, p2 03-01..03-31 each 100029; p3 04-01..04-15 = 100029×15/30 = 50014.5 → 50015 (half up) | tests/billing/schedule.test.ts | done |
+| E03 | 02 | Probe: 2026-02-28..2027-02-27, rent 200000, deposit 400000 | deposit + 12 periods; anchors 28th each month; p11 2027-01-28..2027-02-27 full → 200000 | tests/billing/schedule.test.ts | done |
+| E04 | 02 | Leap: start 2028-01-31, end 2028-03-30, rent 150000, deposit 0 | anchors 01-31, 02-29, 03-31; p0 01-31..02-28, p1 02-29..03-30 full → 150000; 2 periods | tests/billing/schedule.test.ts | done |
+| E05 | 02 | Start 2024-02-29, end 2025-03-28, rent 100000 | anchor 12 = 2025-02-28, anchor 13 = 2025-03-29 (counted from start, not previous anchor); p12 2025-02-28..2025-03-28 full → 100000 | tests/billing/schedule.test.ts | done |
+| E06 | 02 | endDate = startDate: 2026-03-10..2026-03-10, rent 310000, deposit 0 | 1 period 03-10..03-10, full period 03-10..04-09 = 31 days, amount 310000×1/31 = 10000 | tests/billing/schedule.test.ts | done |
+| E07 | 02 | Last period exactly full: 2026-01-01..2026-01-31 rent 150000 | 1 period 01-01..01-31 amount 150000 | tests/billing/schedule.test.ts | done |
+| E08 | 02 | Prorate rounds to 0: 2026-01-01..2026-01-01, rent 1 | 1 period amount 0 (1×1/31 → 0), still returned | tests/billing/schedule.test.ts | done |
+| E09 | 02 | Validation: start "2026-02-30", "2026-2-03", "2026/02/03", end before start, rent 0, rent 1.5, rent -100, deposit -1, deposit 0.5 | each throws Error | tests/billing/schedule.test.ts | done |
+| E10 | 02 | depositSen 0 | no deposit invoice; first item is p0 | tests/billing/schedule.test.ts | done |
+| E11 | 02 | Large rent 900000000000 × 16/31 proration | exact BigInt half-up result, integer | tests/billing/schedule.test.ts | done |
+| E12 | 02 | invoiceStatus due 2026-03-01 amount 1000 paid 0; now 2026-03-01T15:59:59.999Z vs 2026-03-01T16:00:00Z | unpaid vs overdue | tests/billing/status.test.ts | done |
+| E13 | 02 | invoiceStatus paid 1000 (and 1500) of 1000, now long after due | paid | tests/billing/status.test.ts | done |
+| E14 | 02 | paid 500 of 1000; now before overdue vs after | partially_paid vs overdue | tests/billing/status.test.ts | done |
+| E15 | 02 | now 2026-02-28T17:00:00Z (= 03-01 01:00 MYT), due 2026-03-01 | unpaid (today = due date, not after) | tests/billing/status.test.ts | done |
+| E16 | 02 | All billing tests under TZ=UTC, Asia/Kuala_Lumpur, America/New_York (incl. US DST dates 2026-03-08, 2026-11-01) | identical results | tests/billing/purity.test.ts | done |
+| E17 | 02 | parseRinggitToSen "1,500.50", "1.15", "7", "  12.3 ", "1,234,567.89", "0", "0.05" | 150050, 115, 700, 1230, 123456789, 0, 5 | tests/billing/parse.test.ts | done |
+| E18 | 02 | parseRinggitToSen "", "-5", "1.234", "1e3", "RM 10", "1,23", "1,5000", ",500", "1.", ".5", "1 000", "12,34.5" | each throws Error | tests/billing/parse.test.ts | done |
+| E19 | 02 | billing.ts imports | no imports from next, react, supabase, prisma; no I/O | tests/billing/purity.test.ts | done |
 | E20 | 01 | anon (publishable key, no token) selects every table | 0 rows or permission denied on all 10 tables | tests/db/data-api-read.test.ts | done |
 | E21 | 01 | Aisyah token: select leases, invoices, payments, payment_allocations, gateway_bills, units | only rows of her lease A-12-3; units only A-12-3 | tests/db/data-api-read.test.ts | done |
 | E22 | 01 | Aisyah token: select tenants, memberships, audit_log, organizations | tenants own row only; memberships 0; audit_log 0; organizations Northwind only | tests/db/data-api-read.test.ts | done |
@@ -293,6 +293,7 @@ General rule (from the user): **do not add any rejection or validation the brief
 | E103 | 01 | Fresh clone: `npm install` before `.env.local` exists (postinstall `prisma generate`), then `npm run build` | install succeeds and generates the client; build passes | manual + final-check fresh clone | done |
 | E104 | 03 | Staff uploads own-org slip, POST bank_transfer with amountSen "abc" | 400; slip object deleted from storage | tests/payments/record.test.ts | done |
 | E105 | 03 | Lease remaining 100000: staff pending 100000 rejected → new 100000 accepted; approved 100000 voided → new 100000 accepted | 201 both times (rejected not pending; void frees allocations) | tests/payments/record.test.ts | done |
+| E106 | 02 | Start 2026-01-31 end 2026-02-15 rent 150000; start 2026-12-31 end 2027-03-01 rent 100 deposit 5; start 2026-02-01 end 2026-02-14 rent 1 | 85714 (16/28); 2027-02-28..2027-03-01 = 6 (2/31); exact tie 14/28 → 1 | tests/billing/schedule.test.ts | done |
 | E107 | 03 | Two concurrent bank transfers share one own-org slip on different leases: one over cap (422), one valid (201) | 422 and 201; slip file still exists (cleanup never deletes a slip a committed payment uses) | tests/payments/record.test.ts | done |
 | E100 | 06 | REVIEW.md, DECISIONS.md, README, ai-logs present | all present with required content | (set in plan) | todo |
 
