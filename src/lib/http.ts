@@ -1,3 +1,4 @@
+import { unstable_rethrow } from 'next/navigation';
 import { NextResponse } from 'next/server';
 
 export class HttpError extends Error {
@@ -16,6 +17,8 @@ export function handle<Args extends unknown[]>(fn: (...args: Args) => Promise<Re
     try {
       return await fn(...args);
     } catch (error) {
+      // Let Next.js internal errors (prerender interrupts, notFound, redirect) through.
+      unstable_rethrow(error);
       if (error instanceof HttpError) return jsonError(error.status, error.message);
       console.error(error instanceof Error ? error.message : 'Unknown error');
       return jsonError(500, 'Internal error');

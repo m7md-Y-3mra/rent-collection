@@ -12,8 +12,8 @@ beforeAll(async () => { w = await createWorld(); });
 afterAll(() => {
   const calls = spies.flatMap(spy => spy.mock.calls);
   spies.forEach(spy => spy.mockRestore());
-  // E93: the success and rejected-signature paths must log no callback data.
-  expect(calls.flat().join(' ')).not.toMatch(/test_x_signature_key|x_signature|transaction_id|paid_amount/);
+  // E93: no path may log the key, the signature or any callback field.
+  expect(calls.flat().map(String).join(' ')).not.toMatch(/test_x_signature_key|x_signature|transaction_id|paid_amount|paid_at|TX-000123|[0-9a-f]{64}/);
 });
 async function bill() {
   const lease = await leaseVia(w, { end: '2026-02-28' });
@@ -69,6 +69,7 @@ test('E87 five concurrent deliveries settle once', async () => {
   const b = await bill(); const raw = signedBody(paidFields(b));
   expect((await Promise.all(Array.from({ length: 5 }, () => postWebhook(raw)))).map(r => r.status)).toEqual([200, 200, 200, 200, 200]);
   const state = await snapshot(b.billId);
+  expect(state.bill.status).toBe('paid');
   expect(state.payments).toHaveLength(1);
   expect(state.payments[0].payment_allocations.reduce((sum, a) => sum + a.amount_sen, 0n)).toBe(BigInt(b.amountSen));
   expect(await prisma.audit_log.count({ where: { entity_id: state.payments[0].id } })).toBe(1);
@@ -107,4 +108,15 @@ test('A29/A30 invalid paid or paid_at cannot write; already-paid ignores paid_at
   expect(await snapshot(b.billId)).toEqual(before);
   expect((await postWebhook(signedBody(paidFields(b, { transaction_status: 'failed' })))).status).toBe(200);
   expect((await postWebhook(signedBody(paidFields(b, { paid_at: 'bad' })))).status).toBe(200);
+});
+test('E108 concurrent paid=true and paid=false: bill ends paid with one payment', async () => {
+  const b = await bill();
+  const paid = signedBody(paidFields(b));
+  const failed = signedBody(paidFields(b, { paid: 'false', paid_amount: '0', transaction_status: 'failed' }));
+  const results = await Promise.all([postWebhook(failed), postWebhook(paid), postWebhook(failed), postWebhook(paid)]);
+  expect(results.map(r => r.status)).toEqual([200, 200, 200, 200]);
+  const state = await snapshot(b.billId);
+  expect(state.bill.status).toBe('paid');
+  expect(state.payments).toHaveLength(1);
+  expect(state.payments[0].payment_allocations.reduce((sum, a) => sum + a.amount_sen, 0n)).toBe(BigInt(b.amountSen));
 });

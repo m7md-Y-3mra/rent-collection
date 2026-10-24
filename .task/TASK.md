@@ -182,7 +182,7 @@ General rule (from the user): **do not add any rejection or validation the brief
 | 01 | foundation: Next 16 + Prisma 7 + Supabase clients, full schema, grants, RLS, storage bucket + policies, audit/payment triggers, auth helper (Bearer + cookie, roles, 401/404/403), `.env.example`, empty seed.sql | R1, R2, R4, R38–R47, R51–R53 | 40 | done |
 | 02 | billing: `lib/billing.ts` + unit tests under 3 TZs (pure, no DB; can run in parallel with 01) | R9–R18 | 20 | done |
 | 03 | leases-payments: POST/GET lease, record/approve/reject/void, allocation, cap, slip check + cleanup, audit, concurrency tests, `npm run seed` (needs 01 and 02) | R5–R8, R19–R29, R48, R49, R50 | 50 | done |
-| 04 | online-report: gateway bills, webhook, `/payments/return`, collections report endpoint, `gateway-sim.mjs` | R30–R37, R48 | 30 | planned |
+| 04 | online-report: gateway bills, webhook, `/payments/return`, collections report endpoint, `gateway-sim.mjs` | R30–R37, R48 | 30 | done |
 | 05 | ui: staff dashboard, leases list, lease page, record form, approve/reject/void dialogs, tenant portal, pay now, phone edit, MYT display | R3, R54–R60 | 20 | todo |
 | 06 | write-ups: REVIEW.md, DECISIONS.md, README, ai-logs | R61–R63 | 10 | todo |
 
@@ -260,28 +260,28 @@ General rule (from the user): **do not add any rejection or validation the brief
 | E69 | 03 | Concurrent: void payment X while approving payment Y on same lease | both serialize via lease lock; final allocations consistent, sum per invoice ≤ amount | tests/payments/decide.test.ts | done |
 | E70 | 03 | Seed on fresh `db reset`: `npm run seed` | exit 0; all 7 accounts sign in with `Rent-Test-2026!`; leases and invoices per R7 (Ben p3 50015, Aisyah p5 77419); Aisyah payments: cash 300000 → deposit; transfer 200000 → p0 150000 + p1 50000, slip in storage | tests/seed/seed.test.ts | done |
 | E71 | 03 | `npm run seed` run a second time | exits with error, no duplicate data | tests/seed/seed.test.ts | done |
-| E72 | 04 | Collections Northwind from=2026-01 to=2026-03 (seed) | `[{2026-01,300000},{2026-02,0},{2026-03,200000}]` (00:30 MYT Mar 1 counts in March) | tests/reports/collections.test.ts | planned |
-| E73 | 04 | Collections from=2026-03 to=2026-01; from=2026-13; from missing; to="2026-1" | 400 | tests/reports/collections.test.ts | planned |
-| E74 | 04 | Collections as tenant; no token; Beta manager 2026-01..2026-03 | 403; 401; all zero (only Beta data) | tests/reports/collections.test.ts | planned |
-| E75 | 04 | Collections ignores pending, rejected, voided payments | only approved counted | tests/reports/collections.test.ts | planned |
-| E76 | 04 | Aisyah POST gateway-bills today 2026-10-24 (seed) | 201 `{billId, amountSen: 627419}` (1127419 total − 500000 allocated, all due); billId `bill_` + 32 hex | tests/gateway/bills.test.ts | planned |
-| E77 | 04 | gateway-bills on a lease whose first invoice is due in the future (test-created for Probe) | 422 | tests/gateway/bills.test.ts | planned |
-| E78 | 04 | gateway-bills as staff, manager; as Ben on Aisyah lease | 403, 403; 404 | tests/gateway/bills.test.ts | planned |
-| E79 | 04 | Due-now boundary: invoice due 2026-03-01; now 2026-02-28T15:59:59Z vs 2026-02-28T16:00:00Z | excluded vs included | tests/gateway/due-now.test.ts | planned |
-| E80 | 04 | Two Pay now clicks (Q2) | two distinct bills, both pending | tests/gateway/bills.test.ts | planned |
-| E81 | 04 | Signature test vector | `06994fab2d674e7829144eaa2204631716d3c099b503d38945e92b6296531641` | tests/gateway/signature.test.ts | planned |
-| E82 | 04 | Webhook missing x_signature; wrong signature; signature over altered amount | 401; no change | tests/gateway/webhook.test.ts | planned |
-| E83 | 04 | Webhook valid signature, unknown bill id ("bill_x" and random) | 404 | tests/gateway/webhook.test.ts | planned |
-| E84 | 04 | paid=true, paid_amount ≠ bill amount | 422; bill still pending; no payment | tests/gateway/webhook.test.ts | planned |
-| E85 | 04 | paid=true on pending bill, paid_at "2026-04-01 00:30:12 +0800" | 200; bill paid; one approved online payment, received_at 2026-03-31T16:30:12Z, allocated; audit row actor null | tests/gateway/webhook.test.ts | planned |
-| E86 | 04 | Same paid=true callback repeated | 200; still one payment | tests/gateway/webhook.test.ts | planned |
-| E87 | 04 | Same paid=true callback ×5 concurrently (Promise.all) | all 200; exactly one payment, allocations once | tests/gateway/webhook.test.ts | planned |
-| E88 | 04 | paid=false on pending; then again; then paid=true | failed; 200 no change; then paid + one payment | tests/gateway/webhook.test.ts | planned |
-| E89 | 04 | paid=false after bill paid (out of order) | 200; bill stays paid; payment unchanged | tests/gateway/webhook.test.ts | planned |
-| E90 | 04 | Extra unknown field `foo=bar` included in signature | valid → processed; signature computed without foo → 401 | tests/gateway/webhook.test.ts | planned |
-| E91 | 04 | Online payment larger than lease unpaid (other payment settled first) | allocated to remaining invoices; leftover in unapplied_sen | tests/gateway/webhook.test.ts | planned |
-| E92 | 04 | GET /payments/return?bill_id=X&paid=true for pending bill | shows pending; bill and payments unchanged | tests/gateway/return.test.ts | planned |
-| E93 | 04 | Webhook logs | no payload or key in logs (code check) | tests/gateway/webhook.test.ts | planned |
+| E72 | 04 | Collections Northwind from=2026-01 to=2026-03 (seed) | `[{2026-01,300000},{2026-02,0},{2026-03,200000}]` (00:30 MYT Mar 1 counts in March) | tests/reports/collections.test.ts | done |
+| E73 | 04 | Collections from=2026-03 to=2026-01; from=2026-13; from missing; to="2026-1" | 400 | tests/reports/collections.test.ts | done |
+| E74 | 04 | Collections as tenant; no token; Beta manager 2026-01..2026-03 | 403; 401; all zero (only Beta data) | tests/reports/collections.test.ts | done |
+| E75 | 04 | Collections ignores pending, rejected, voided payments | only approved counted | tests/reports/collections.test.ts | done |
+| E76 | 04 | Aisyah POST gateway-bills today 2026-10-24 (seed) | 201 `{billId, amountSen: 627419}` (1127419 total − 500000 allocated, all due); billId `bill_` + 32 hex | tests/gateway/bills.test.ts | done |
+| E77 | 04 | gateway-bills on a lease whose first invoice is due in the future (test-created for Probe) | 422 | tests/gateway/bills.test.ts | done |
+| E78 | 04 | gateway-bills as staff, manager; as Ben on Aisyah lease | 403, 403; 404 | tests/gateway/bills.test.ts | done |
+| E79 | 04 | Due-now boundary: invoice due 2026-03-01; now 2026-02-28T15:59:59Z vs 2026-02-28T16:00:00Z | excluded vs included | tests/gateway/due-now.test.ts | done |
+| E80 | 04 | Two Pay now clicks (Q2) | two distinct bills, both pending | tests/gateway/bills.test.ts | done |
+| E81 | 04 | Signature test vector | `06994fab2d674e7829144eaa2204631716d3c099b503d38945e92b6296531641` | tests/gateway/signature.test.ts | done |
+| E82 | 04 | Webhook missing x_signature; wrong signature; signature over altered amount | 401; no change | tests/gateway/webhook.test.ts | done |
+| E83 | 04 | Webhook valid signature, unknown bill id ("bill_x" and random) | 404 | tests/gateway/webhook.test.ts | done |
+| E84 | 04 | paid=true, paid_amount ≠ bill amount | 422; bill still pending; no payment | tests/gateway/webhook.test.ts | done |
+| E85 | 04 | paid=true on pending bill, paid_at "2026-04-01 00:30:12 +0800" | 200; bill paid; one approved online payment, received_at 2026-03-31T16:30:12Z, allocated; audit row actor null | tests/gateway/webhook.test.ts | done |
+| E86 | 04 | Same paid=true callback repeated | 200; still one payment | tests/gateway/webhook.test.ts | done |
+| E87 | 04 | Same paid=true callback ×5 concurrently (Promise.all) | all 200; exactly one payment, allocations once | tests/gateway/webhook.test.ts | done |
+| E88 | 04 | paid=false on pending; then again; then paid=true | failed; 200 no change; then paid + one payment | tests/gateway/webhook.test.ts | done |
+| E89 | 04 | paid=false after bill paid (out of order) | 200; bill stays paid; payment unchanged | tests/gateway/webhook.test.ts | done |
+| E90 | 04 | Extra unknown field `foo=bar` included in signature | valid → processed; signature computed without foo → 401 | tests/gateway/webhook.test.ts | done |
+| E91 | 04 | Online payment larger than lease unpaid (other payment settled first) | allocated to remaining invoices; leftover in unapplied_sen | tests/gateway/webhook.test.ts | done |
+| E92 | 04 | GET /payments/return?bill_id=X&paid=true for pending bill | shows pending; bill and payments unchanged | tests/gateway/return.test.ts | done |
+| E93 | 04 | Webhook logs | no payload or key in logs (code check) | tests/gateway/webhook.test.ts | done |
 | E94 | 05 | Browser TZ America/New_York views lease page and payment times | dates/times shown in MYT; no hydration warning | (set in plan) | todo |
 | E95 | 05 | Record form: amount "1,500.50" → 150050 sent; "1.234" → inline error, no request | as stated | (set in plan) | todo |
 | E96 | 05 | Record form receivedAt typed "2026-03-01 00:30" in MYT | sent as 2026-03-01T00:30:00+08:00 regardless of browser TZ | (set in plan) | todo |
@@ -295,6 +295,7 @@ General rule (from the user): **do not add any rejection or validation the brief
 | E105 | 03 | Lease remaining 100000: staff pending 100000 rejected → new 100000 accepted; approved 100000 voided → new 100000 accepted | 201 both times (rejected not pending; void frees allocations) | tests/payments/record.test.ts | done |
 | E106 | 02 | Start 2026-01-31 end 2026-02-15 rent 150000; start 2026-12-31 end 2027-03-01 rent 100 deposit 5; start 2026-02-01 end 2026-02-14 rent 1 | 85714 (16/28); 2027-02-28..2027-03-01 = 6 (2/31); exact tie 14/28 → 1 | tests/billing/schedule.test.ts | done |
 | E107 | 03 | Two concurrent bank transfers share one own-org slip on different leases: one over cap (422), one valid (201) | 422 and 201; slip file still exists (cleanup never deletes a slip a committed payment uses) | tests/payments/record.test.ts | done |
+| E108 | 04 | Webhook paid=true and paid=false for the same pending bill delivered concurrently (Promise.all ×4) | all 200; bill ends paid; exactly one payment, allocated once | tests/gateway/webhook.test.ts | done |
 | E100 | 06 | REVIEW.md, DECISIONS.md, README, ai-logs present | all present with required content | (set in plan) | todo |
 
 ## Open questions
