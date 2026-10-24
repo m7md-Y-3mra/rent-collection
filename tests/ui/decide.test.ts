@@ -27,4 +27,11 @@ it('E98 reason and decision toast messages', async () => {
     ok: false,
     message: 'Payment is not pending',
   });
+  const html = vi
+    .fn<typeof fetch>()
+    .mockResolvedValue(new Response('<html>oops</html>', { status: 500 }));
+  expect(await submitDecision(html, 'p', 'void', 'abcde')).toEqual({
+    ok: false,
+    message: 'Request failed (500).',
+  });
 });

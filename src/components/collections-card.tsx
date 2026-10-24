@@ -35,7 +35,7 @@ export function CollectionsCard({ from, to }: { from: string; to: string }) {
           `/api/reports/collections?from=${from}&to=${to}`,
           { signal: controller.signal }
         );
-        const data = await response.json();
+        const data = await response.json().catch(() => ({}));
         if (!response.ok)
           throw new Error(data.error ?? 'Could not load collections.');
         if (!controller.signal.aborted) setRows(data);

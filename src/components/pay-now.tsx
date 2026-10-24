@@ -17,7 +17,7 @@ export function PayNow({ leaseId }: { leaseId: string }) {
       const response = await fetch(`/api/leases/${leaseId}/gateway-bills`, {
         method: 'POST',
       });
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
       if (!response.ok)
         throw new Error(
           response.status === 422

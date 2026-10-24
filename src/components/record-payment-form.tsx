@@ -83,7 +83,7 @@ export function RecordPaymentForm({
           ...(slipPath ? { slipPath } : {}),
         }),
       });
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
       if (!response.ok)
         throw new Error(data.error ?? 'Could not record the payment.');
       toast.success(

@@ -15,7 +15,7 @@ export async function submitDecision(
         ok: true,
         message: `Payment ${action === 'approve' ? 'approved' : action === 'reject' ? 'rejected' : 'voided'}.`,
       };
-    const data = await response.json();
+    const data = await response.json().catch(() => ({}));
     return {
       ok: false,
       message:

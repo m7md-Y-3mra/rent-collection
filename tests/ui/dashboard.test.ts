@@ -37,6 +37,8 @@ it('E97 overdue count matches invoiceStatus for scoped member records', async ()
       leases.flatMap((l) => l.invoices).filter((i) => i.status === 'overdue')
         .length
     );
+    // a1 is now paid; a2 is overdue; org B's overdue invoice must not count.
+    expect(await countOverdueInvoices(actor, new Date())).toBe(1);
   }
   await expect(
     countOverdueInvoices(
