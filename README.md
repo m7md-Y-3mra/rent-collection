@@ -6,7 +6,7 @@ Stack: Next.js 16 (App Router), TypeScript strict, Supabase local (Auth, Postgre
 
 ## Run
 
-Prerequisites: Node.js 20.9+, Docker, Supabase CLI (pinned as a devDependency and run through `npx supabase`).
+Prerequisites: Node.js 22 (tested on 22.23; Prisma 7 needs at least 20.19 and `@supabase/supabase-js` declares 22+), Docker, Supabase CLI (pinned as a devDependency and run through `npx supabase`).
 
 The same commands the brief lists, from a fresh clone:
 
