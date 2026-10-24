@@ -12,8 +12,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@prisma/adapter-pg": "7.10.1",
-    "@prisma/client": "7.10.1",
+    "@prisma/adapter-pg": "7.0.1",
+    "@prisma/client": "7.0.1",
     "@supabase/ssr": "0.12.7",
     "@supabase/supabase-js": "2.118.0",
     "cookie": "2.0.1",
@@ -32,7 +32,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.4.3",
-    "prisma": "7.10.1",
+    "prisma": "7.0.1",
     "supabase": "2.122.0",
     "tailwindcss": "^4",
     "typescript": "^5",
