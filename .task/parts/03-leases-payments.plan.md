@@ -197,7 +197,7 @@ All route tests run on `createWorld()` data with leases created through the rout
 - [x] 2. Install `tsx` (exact version) and add the `seed` script. Write a stub `scripts/seed.ts` that imports `@/lib/prisma` and prints the organization count. `npm run seed` works on Node 20. If the flags fail, stop and report; do not guess.
 - [x] 3. Write `ids`, `db-dates`, `instant`, `db-errors` and `locks`, plus `tests/helpers/{http,leasing,seeded}.ts`.
 - [x] 4. Write the test files above. They fail on missing modules.
-- [ ] 5. Write `allocation.ts`, `services/leases.ts` and the two lease routes. The lease tests pass. Log the real 23P01 error shape once before writing `isExclusionViolation`.
+- [x] 5. Write `allocation.ts`, `services/leases.ts` and the two lease routes. The lease tests pass. Log the real 23P01 error shape once before writing `isExclusionViolation`.
 - [ ] 6. Write `services/payments.ts` and the four payment routes. The record, decide and allocation tests pass.
 - [ ] 7. Write the full `scripts/seed.ts`. After `db reset` and `npm run seed`, `tests/seed` passes.
 - [ ] 8. `npx supabase db reset` → `npm test` → `npx tsc --noEmit`, all green. Update TASK.md rows to `built`, write `03-leases-payments.handoff.md`, commit.
@@ -255,3 +255,4 @@ All route tests run on `createWorld()` data with leases created through the rout
 - User override: build in `/home/m7md/a/task-part-03` on `feat/part-03-leases-payments` from `feat/part-02-billing`, rather than `main`. Review/merge of part 02 is not claimed.
 - Copied working files, local environment and Supabase files; dependencies installed independently. Local secrets remain ignored.
 - Baseline: reset passed, existing 80 tests passed (new part 03 suites intentionally fail missing imports). Seed scaffold verified with the prescribed flags on Node 22 and Node 20.
+- Observed Prisma 7 exclusion error: `DriverAdapterError`, `cause.code` and `cause.originalCode` both `23P01`, message names `leases_no_overlap`; overlap tests pass.
