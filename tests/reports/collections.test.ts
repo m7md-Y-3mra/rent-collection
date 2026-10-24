@@ -9,7 +9,7 @@ import { ensureSeeded } from '../helpers/seeded';
 let w: World;
 beforeAll(async () => { w = await createWorld(); await ensureSeeded(); });
 async function report(query: string, token?: string) {
-  return callRoute<{}, { month: string; collectedSen: number }[]>(GET, { method: 'GET', path: '/api/reports/collections' + query, token, params: {} });
+  return callRoute<Record<string, never>, { month: string; collectedSen: number }[]>(GET, { method: 'GET', path: '/api/reports/collections' + query, token, params: {} });
 }
 async function seedToken(email: string) {
   const { data, error } = await publicClient().auth.signInWithPassword({ email, password: 'Rent-Test-2026!' });
