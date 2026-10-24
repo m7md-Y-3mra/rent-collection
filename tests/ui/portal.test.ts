@@ -42,4 +42,6 @@ it('portal embedded query and computed allocations only expose own lease', async
     paidSen: 10000,
     status: 'overdue',
   });
+  // Fixture invoice 100000 due 2026-01-01, 10000 allocated.
+  expect(view[0].leases[0].dueNowSen).toBe(90000);
 });

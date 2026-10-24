@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { invoiceStatus } from '@/lib/billing';
+import { amountDueNowSen } from '@/lib/gateway/due-now';
 export const PORTAL_SELECT =
   'id, full_name, email, phone, leases(id, start_date, end_date, monthly_rent_sen, deposit_sen, units(name), invoices(id, kind, period_index, period_start, period_end, due_date, amount_sen, payment_allocations(amount_sen)), payments(id, amount_sen, unapplied_sen, method, status, received_at))';
 export type PortalTenantRow = {
@@ -39,6 +40,16 @@ export function toPortalView(rows: PortalTenantRow[], now: Date) {
     ...tenant,
     leases: tenant.leases.map((lease) => ({
       ...lease,
+      dueNowSen: Number(
+        amountDueNowSen(
+          lease.invoices.map((i) => ({
+            dueDate: i.due_date,
+            amountSen: BigInt(i.amount_sen),
+            paidSen: i.payment_allocations.reduce((sum, a) => sum + BigInt(a.amount_sen), 0n),
+          })),
+          now
+        )
+      ),
       invoices: lease.invoices
         .map((i) => {
           const paidSen = i.payment_allocations.reduce(

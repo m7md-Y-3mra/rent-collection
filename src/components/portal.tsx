@@ -214,6 +214,9 @@ export function Portal() {
                 </section>
                 <section className="space-y-3 border-t pt-6">
                   <h2 className="font-semibold">Online payment</h2>
+                  <p className="font-mono text-2xl">
+                    Due now: {formatSen(lease.dueNowSen)}
+                  </p>
                   <p className="text-sm text-muted-foreground">
                     Create a bill for unpaid invoices due today or earlier.
                   </p>

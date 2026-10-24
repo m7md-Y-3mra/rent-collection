@@ -3,6 +3,8 @@ import { countOverdueInvoices } from '@/lib/services/dashboard';
 import { POST as record } from '@/app/api/leases/[leaseId]/payments/route';
 import { callRoute } from '../helpers/http';
 import { getLease } from '@/lib/services/leases';
+import { GET as collections } from '@/app/api/reports/collections/route';
+import { lastSixMonths } from '@/lib/ui/format';
 import { createWorld, type World } from '../helpers/world';
 let w: World;
 beforeAll(async () => {
@@ -51,4 +53,16 @@ it('E97 overdue count matches invoiceStatus for scoped member records', async ()
       new Date()
     )
   ).rejects.toMatchObject({ status: 403 });
+  const range = lastSixMonths(new Date());
+  const report = await callRoute(collections, {
+    method: 'GET',
+    path: `/api/reports/collections?from=${range.from}&to=${range.to}`,
+    token: await w.token(w.staffA),
+    params: {},
+  });
+  expect(report.status).toBe(200);
+  const months = report.json as unknown as { month: string; collectedSen: number }[];
+  expect(months).toHaveLength(6);
+  expect(months[0].month).toBe(range.from);
+  expect(months[5].month).toBe(range.to);
 });
