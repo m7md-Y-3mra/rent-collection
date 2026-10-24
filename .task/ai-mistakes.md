@@ -1,2 +1,4 @@
 - Plan 01 granted SELECT on public tables to service_role; the user corrected it: service_role gets no table grants, and the admin client is only for auth.admin and Storage (user reviewed the plan).
 - Ran `npx supabase migration new` with a pipe; the CLI waited on stdin and hung. Use `</dev/null`. (found while reviewing part 01)
+- Part 05: shadcn (Base UI) `Button` defaults to `type="button"`, so login, phone and record-payment forms never submitted; tests only covered pure helpers. User noticed when Sign in did nothing in the browser.
+- Part 05: getActor() on pages ran Supabase getUser (reads Date.now) inside the partialPrefetching App Shell prerender, and CollectionsCard aborted its fetch on unmount causing an unhandled AbortError; user saw both in the dev terminal.

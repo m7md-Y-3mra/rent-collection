@@ -187,7 +187,7 @@ export function RecordPaymentForm({
             </div>
           )}
           <div className="md:col-span-2">
-            <Button disabled={pending}>
+            <Button type="submit" disabled={pending}>
               {pending ? 'Recording payment…' : 'Record payment'}
             </Button>
           </div>

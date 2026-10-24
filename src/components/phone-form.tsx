@@ -47,7 +47,7 @@ export function PhoneForm({
           maxLength={30}
           autoComplete="tel"
         />
-        <Button disabled={pending}>{pending ? 'Saving…' : 'Save phone'}</Button>
+        <Button type="submit" disabled={pending}>{pending ? 'Saving…' : 'Save phone'}</Button>
       </div>
       <p className="text-xs text-muted-foreground">
         Leave blank to remove your phone number.

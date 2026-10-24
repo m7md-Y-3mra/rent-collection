@@ -2,6 +2,7 @@ import 'server-only';
 import { createServerClient } from '@supabase/ssr';
 import { parseCookie } from 'cookie';
 import { cookies } from 'next/headers';
+import { connection } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { serverEnv } from '@/lib/env';
 import { HttpError } from '@/lib/http';
@@ -12,6 +13,9 @@ export type Actor =
   | { kind: 'none'; userId: string };
 
 export async function getActor(req?: Request): Promise<Actor | null> {
+  // Pages: the session check reads the clock (token expiry), so it must run at request time,
+  // not in the cookie-aware App Shell prerender that partialPrefetching performs.
+  if (!req) await connection();
   const authorization = req?.headers.get('authorization');
   const bearer = authorization?.match(/^Bearer\s+(.+)$/i)?.[1];
   const requestCookies = req
