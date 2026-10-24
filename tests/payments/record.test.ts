@@ -137,6 +137,16 @@ it('failed reuse never deletes a slip already referenced by a payment', async ()
   expect((await post(lease.id, { ...cash, amountSen: 100001, method: 'bank_transfer', slipPath })).status).toBe(422);
   expect(await slipExists(slipPath)).toBe(true);
 });
+it('E107 concurrent success and failure sharing one slip never leave a payment without its file', async () => {
+  for (let round = 0; round < 5; round++) {
+    const [ok, over] = await Promise.all([leaseVia(w), leaseVia(w)]);
+    const slipPath = await uploadSlip(w, w.staffA, w.orgA.id);
+    const body = { ...cash, method: 'bank_transfer', slipPath };
+    const results = await Promise.all([post(over.id, { ...body, amountSen: 100001 }), post(ok.id, body)]);
+    expect(results.map(r => r.status)).toEqual([422, 201]);
+    expect(await slipExists(slipPath)).toBe(true);
+  }
+});
 it('E105 rejection frees pending cap and void frees allocated balance', async () => {
   const lease = await leaseVia(w);
   const pending = await post(lease.id, { ...cash, amountSen: 100000 });

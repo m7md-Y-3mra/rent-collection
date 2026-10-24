@@ -5,7 +5,7 @@ import { allocate, leaseTotals } from '@/lib/allocation';
 import { HttpError } from '@/lib/http';
 import { isUuid } from '@/lib/ids';
 import { parseInstant } from '@/lib/instant';
-import { lockLease, lockPayment } from '@/lib/locks';
+import { lockLease, lockPayment, lockSlip } from '@/lib/locks';
 import { prisma } from '@/lib/prisma';
 import { createClient } from '@/lib/supabase/admin';
 
@@ -29,9 +29,13 @@ async function cleanupSlip(actor: Actor, body: unknown): Promise<void> {
   const { method, slipPath } = body as Record<string, unknown>;
   if (method !== 'bank_transfer' || typeof slipPath !== 'string' || !slipPath.startsWith(actor.orgId + '/')) return;
   try {
-    if (await prisma.payments.count({ where: { slip_path: slipPath } })) return;
-    const { error } = await createClient().storage.from('payment-slips').remove([slipPath]);
-    if (error) console.error(error.message);
+    // Hold the slip lock while checking and deleting, so a concurrent insert using this slip either commits first or waits.
+    await prisma.$transaction(async tx => {
+      await lockSlip(tx, slipPath);
+      if (await tx.payments.count({ where: { slip_path: slipPath } })) return;
+      const { error } = await createClient().storage.from('payment-slips').remove([slipPath]);
+      if (error) console.error(error.message);
+    }, { timeout: 15000 });
   } catch (error) {
     console.error(error instanceof Error ? error.message : 'Slip cleanup failed');
   }
@@ -62,6 +66,7 @@ export async function recordPayment(actor: Actor, leaseId: string, body: unknown
     const status = approved ? 'approved' : 'pending_verification';
     return await prisma.$transaction(async tx => {
       await lockLease(tx, leaseId);
+      if (slipPath) await lockSlip(tx, slipPath);
       const totals = await leaseTotals(tx, leaseId);
       if (amount > totals.invoiced - totals.allocated - totals.pending) throw new HttpError(422, 'Amount exceeds the remaining balance');
       const payment = await tx.payments.create({ data: {
