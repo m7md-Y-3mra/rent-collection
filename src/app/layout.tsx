@@ -20,7 +20,9 @@ export const metadata: Metadata = {
   description: "Malaysia property rent accounts and collections",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
   return (
     <html
       lang="en"
