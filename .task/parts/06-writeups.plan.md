@@ -80,11 +80,11 @@ Sections: What it is (2 lines) · Requirements (Node 20.9+, Docker, Supabase CLI
   - No `.env` or `.env.local` tracked: `git ls-files` output has no line matching `/^\.env(\.local)?$/`.
 
 ## Steps
-- [ ] 1. Copy PR code to scratch, number lines, write `REVIEW.md`.
-- [ ] 2. Grep repo, write `DECISIONS.md`; check each answer with `wc -w`.
-- [ ] 3. Write `README.md` and `ai-logs/README.md`.
-- [ ] 4. Write `tests/docs/writeups.test.ts`; `npm test` and `npx tsc --noEmit` pass.
-- [ ] 5. TASK.md: part 06 → `done`, E100 → `done`; handoff note `.task/parts/06-writeups.handoff.md` listing the `TODO(user)` markers; commit.
+- [x] 1. Copy PR code to scratch, number lines, write `REVIEW.md`.
+- [x] 2. Grep repo, write `DECISIONS.md`; check each answer with `wc -w`.
+- [x] 3. Write `README.md` and `ai-logs/README.md`.
+- [x] 4. Write `tests/docs/writeups.test.ts`; `npm test` and `npx tsc --noEmit` pass.
+- [x] 5. TASK.md: part 06 → `done`, E100 → `done`; handoff note `.task/parts/06-writeups.handoff.md` listing the `TODO(user)` markers; commit.
 
 ## Done when
 - `npm test` and `npx tsc --noEmit` pass after `npx supabase db reset`.
