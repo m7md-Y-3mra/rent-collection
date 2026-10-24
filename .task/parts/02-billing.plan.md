@@ -96,7 +96,7 @@ Tests import from `../../src/lib/billing` with a relative path, so they do not d
 ## Steps
 - [x] 1. Prerequisite: `package.json` with `vitest` exists (part 01, steps 1–2). If it does not exist yet, wait, or write the code and tests first and run them once it does.
 - [x] 2. Write the four test files. `npx vitest run tests/billing` fails because the module is missing.
-- [ ] 3. Write `src/lib/billing.ts` until `npx vitest run tests/billing` passes.
+- [x] 3. Write `src/lib/billing.ts` until `npx vitest run tests/billing` passes.
 - [ ] 4. Write `scripts/test-billing-tz.mjs` and the `test:billing` script. `npm run test:billing` passes all three runs.
 - [ ] 5. `npx tsc --noEmit` passes (strict, no `any`).
 - [ ] 6. Set part 02 and rows E01–E19 to built in TASK.md, write `.task/parts/02-billing.handoff.md`, and commit only the files listed above.
