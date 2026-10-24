@@ -99,7 +99,7 @@ Tests import from `../../src/lib/billing` with a relative path, so they do not d
 - [x] 3. Write `src/lib/billing.ts` until `npx vitest run tests/billing` passes.
 - [x] 4. Write `scripts/test-billing-tz.mjs` and the `test:billing` script. `npm run test:billing` passes all three runs.
 - [x] 5. `npx tsc --noEmit` passes (strict, no `any`).
-- [ ] 6. Set part 02 and rows E01–E19 to built in TASK.md, write `.task/parts/02-billing.handoff.md`, and commit only the files listed above.
+- [x] 6. Set part 02 and rows E01–E19 to built in TASK.md, write `.task/parts/02-billing.handoff.md`, and commit only the files listed above.
 
 ## Done when
 - `npm run test:billing` passes under all three TZ values. `npx tsc --noEmit` passes.
