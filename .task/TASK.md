@@ -163,6 +163,8 @@ General rule (from the user): **do not add any rejection or validation the brief
 - OQ3: parseRinggitToSen when the sen value is greater than Number.MAX_SAFE_INTEGER → throws an Error (user decision).
 - A28: service_role has no grants on public tables. The admin client (secret key) is used only for auth.admin and Storage; all table access goes through Prisma (user decision).
 - A26: `supabase/seed.sql` is committed empty, so `db reset` stays clean with the current `config.toml` (accepted).
+- A29: Webhook with a valid signature and `paid` neither exactly `true` nor exactly `false` (missing, `TRUE`, `1`) → 400, no effect (user decision, Q6 A).
+- A30: `paid_at` is parsed only in the branch that creates the payment (paid=true, amount matches, bill pending or failed, after the lock). Unparseable there → 400, no effect. On an already-paid bill a bad `paid_at` is ignored → 200 none (user decision, Q7 A; resolves OQ2).
 
 ## Overrides (brief beats defaults)
 - Columns end in `_sen`, not `_cents`. JSON amounts are integer numbers, not strings.
@@ -182,7 +184,7 @@ General rule (from the user): **do not add any rejection or validation the brief
 | 01 | foundation: Next 16 + Prisma 7 + Supabase clients, full schema, grants, RLS, storage bucket + policies, audit/payment triggers, auth helper (Bearer + cookie, roles, 401/404/403), `.env.example`, empty seed.sql | R1, R2, R4, R38–R47, R51–R53 | 40 | done |
 | 02 | billing: `lib/billing.ts` + unit tests under 3 TZs (pure, no DB; can run in parallel with 01) | R9–R18 | 20 | done |
 | 03 | leases-payments: POST/GET lease, record/approve/reject/void, allocation, cap, slip check + cleanup, audit, concurrency tests, `npm run seed` (needs 01 and 02) | R5–R8, R19–R29, R48, R49, R50 | 50 | planned |
-| 04 | online-report: gateway bills, webhook, `/payments/return`, collections report endpoint, `gateway-sim.mjs` | R30–R37, R48 | 30 | todo |
+| 04 | online-report: gateway bills, webhook, `/payments/return`, collections report endpoint, `gateway-sim.mjs` | R30–R37, R48 | 30 | planned |
 | 05 | ui: staff dashboard, leases list, lease page, record form, approve/reject/void dialogs, tenant portal, pay now, phone edit, MYT display | R3, R54–R60 | 20 | todo |
 | 06 | write-ups: REVIEW.md, DECISIONS.md, README, ai-logs | R61–R63 | 10 | todo |
 
@@ -260,28 +262,28 @@ General rule (from the user): **do not add any rejection or validation the brief
 | E69 | 03 | Concurrent: void payment X while approving payment Y on same lease | both serialize via lease lock; final allocations consistent, sum per invoice ≤ amount | tests/payments/decide.test.ts | planned |
 | E70 | 03 | Seed on fresh `db reset`: `npm run seed` | exit 0; all 7 accounts sign in with `Rent-Test-2026!`; leases and invoices per R7 (Ben p3 50015, Aisyah p5 77419); Aisyah payments: cash 300000 → deposit; transfer 200000 → p0 150000 + p1 50000, slip in storage | tests/seed/seed.test.ts | planned |
 | E71 | 03 | `npm run seed` run a second time | exits with error, no duplicate data | tests/seed/seed.test.ts | planned |
-| E72 | 04 | Collections Northwind from=2026-01 to=2026-03 (seed) | `[{2026-01,300000},{2026-02,0},{2026-03,200000}]` (00:30 MYT Mar 1 counts in March) | (set in plan) | todo |
-| E73 | 04 | Collections from=2026-03 to=2026-01; from=2026-13; from missing; to="2026-1" | 400 | (set in plan) | todo |
-| E74 | 04 | Collections as tenant; no token; Beta manager 2026-01..2026-03 | 403; 401; all zero (only Beta data) | (set in plan) | todo |
-| E75 | 04 | Collections ignores pending, rejected, voided payments | only approved counted | (set in plan) | todo |
-| E76 | 04 | Aisyah POST gateway-bills today 2026-10-24 (seed) | 201 `{billId, amountSen: 627419}` (1127419 total − 500000 allocated, all due); billId `bill_` + 32 hex | (set in plan) | todo |
-| E77 | 04 | gateway-bills on a lease whose first invoice is due in the future (test-created for Probe) | 422 | (set in plan) | todo |
-| E78 | 04 | gateway-bills as staff, manager; as Ben on Aisyah lease | 403, 403; 404 | (set in plan) | todo |
-| E79 | 04 | Due-now boundary: invoice due 2026-03-01; now 2026-02-28T15:59:59Z vs 2026-02-28T16:00:00Z | excluded vs included | (set in plan) | todo |
-| E80 | 04 | Two Pay now clicks (Q2) | two distinct bills, both pending | (set in plan) | todo |
-| E81 | 04 | Signature test vector | `06994fab2d674e7829144eaa2204631716d3c099b503d38945e92b6296531641` | (set in plan) | todo |
-| E82 | 04 | Webhook missing x_signature; wrong signature; signature over altered amount | 401; no change | (set in plan) | todo |
-| E83 | 04 | Webhook valid signature, unknown bill id ("bill_x" and random) | 404 | (set in plan) | todo |
-| E84 | 04 | paid=true, paid_amount ≠ bill amount | 422; bill still pending; no payment | (set in plan) | todo |
-| E85 | 04 | paid=true on pending bill, paid_at "2026-04-01 00:30:12 +0800" | 200; bill paid; one approved online payment, received_at 2026-03-31T16:30:12Z, allocated; audit row actor null | (set in plan) | todo |
-| E86 | 04 | Same paid=true callback repeated | 200; still one payment | (set in plan) | todo |
-| E87 | 04 | Same paid=true callback ×5 concurrently (Promise.all) | all 200; exactly one payment, allocations once | (set in plan) | todo |
-| E88 | 04 | paid=false on pending; then again; then paid=true | failed; 200 no change; then paid + one payment | (set in plan) | todo |
-| E89 | 04 | paid=false after bill paid (out of order) | 200; bill stays paid; payment unchanged | (set in plan) | todo |
-| E90 | 04 | Extra unknown field `foo=bar` included in signature | valid → processed; signature computed without foo → 401 | (set in plan) | todo |
-| E91 | 04 | Online payment larger than lease unpaid (other payment settled first) | allocated to remaining invoices; leftover in unapplied_sen | (set in plan) | todo |
-| E92 | 04 | GET /payments/return?bill_id=X&paid=true for pending bill | shows pending; bill and payments unchanged | (set in plan) | todo |
-| E93 | 04 | Webhook logs | no payload or key in logs (code check) | (set in plan) | todo |
+| E72 | 04 | Collections Northwind from=2026-01 to=2026-03 (seed) | `[{2026-01,300000},{2026-02,0},{2026-03,200000}]` (00:30 MYT Mar 1 counts in March) | tests/reports/collections.test.ts | planned |
+| E73 | 04 | Collections from=2026-03 to=2026-01; from=2026-13; from missing; to="2026-1" | 400 | tests/reports/collections.test.ts | planned |
+| E74 | 04 | Collections as tenant; no token; Beta manager 2026-01..2026-03 | 403; 401; all zero (only Beta data) | tests/reports/collections.test.ts | planned |
+| E75 | 04 | Collections ignores pending, rejected, voided payments | only approved counted | tests/reports/collections.test.ts | planned |
+| E76 | 04 | Aisyah POST gateway-bills today 2026-10-24 (seed) | 201 `{billId, amountSen: 627419}` (1127419 total − 500000 allocated, all due); billId `bill_` + 32 hex | tests/gateway/bills.test.ts | planned |
+| E77 | 04 | gateway-bills on a lease whose first invoice is due in the future (test-created for Probe) | 422 | tests/gateway/bills.test.ts | planned |
+| E78 | 04 | gateway-bills as staff, manager; as Ben on Aisyah lease | 403, 403; 404 | tests/gateway/bills.test.ts | planned |
+| E79 | 04 | Due-now boundary: invoice due 2026-03-01; now 2026-02-28T15:59:59Z vs 2026-02-28T16:00:00Z | excluded vs included | tests/gateway/due-now.test.ts | planned |
+| E80 | 04 | Two Pay now clicks (Q2) | two distinct bills, both pending | tests/gateway/bills.test.ts | planned |
+| E81 | 04 | Signature test vector | `06994fab2d674e7829144eaa2204631716d3c099b503d38945e92b6296531641` | tests/gateway/signature.test.ts | planned |
+| E82 | 04 | Webhook missing x_signature; wrong signature; signature over altered amount | 401; no change | tests/gateway/webhook.test.ts | planned |
+| E83 | 04 | Webhook valid signature, unknown bill id ("bill_x" and random) | 404 | tests/gateway/webhook.test.ts | planned |
+| E84 | 04 | paid=true, paid_amount ≠ bill amount | 422; bill still pending; no payment | tests/gateway/webhook.test.ts | planned |
+| E85 | 04 | paid=true on pending bill, paid_at "2026-04-01 00:30:12 +0800" | 200; bill paid; one approved online payment, received_at 2026-03-31T16:30:12Z, allocated; audit row actor null | tests/gateway/webhook.test.ts | planned |
+| E86 | 04 | Same paid=true callback repeated | 200; still one payment | tests/gateway/webhook.test.ts | planned |
+| E87 | 04 | Same paid=true callback ×5 concurrently (Promise.all) | all 200; exactly one payment, allocations once | tests/gateway/webhook.test.ts | planned |
+| E88 | 04 | paid=false on pending; then again; then paid=true | failed; 200 no change; then paid + one payment | tests/gateway/webhook.test.ts | planned |
+| E89 | 04 | paid=false after bill paid (out of order) | 200; bill stays paid; payment unchanged | tests/gateway/webhook.test.ts | planned |
+| E90 | 04 | Extra unknown field `foo=bar` included in signature | valid → processed; signature computed without foo → 401 | tests/gateway/webhook.test.ts | planned |
+| E91 | 04 | Online payment larger than lease unpaid (other payment settled first) | allocated to remaining invoices; leftover in unapplied_sen | tests/gateway/webhook.test.ts | planned |
+| E92 | 04 | GET /payments/return?bill_id=X&paid=true for pending bill | shows pending; bill and payments unchanged | tests/gateway/return.test.ts | planned |
+| E93 | 04 | Webhook logs | no payload or key in logs (code check) | tests/gateway/webhook.test.ts | planned |
 | E94 | 05 | Browser TZ America/New_York views lease page and payment times | dates/times shown in MYT; no hydration warning | (set in plan) | todo |
 | E95 | 05 | Record form: amount "1,500.50" → 150050 sent; "1.234" → inline error, no request | as stated | (set in plan) | todo |
 | E96 | 05 | Record form receivedAt typed "2026-03-01 00:30" in MYT | sent as 2026-03-01T00:30:00+08:00 regardless of browser TZ | (set in plan) | todo |
@@ -298,4 +300,3 @@ General rule (from the user): **do not add any rejection or validation the brief
 
 ## Open questions
 - OQ1: `amountSen` ≤ 0 on POST /api/leases/:leaseId/payments. The brief only says "integers in sen" and the cap. A 0 or negative payment passes the cap check. Proposed: 400 for amountSen ≤ 0, because a negative amount would make allocation meaningless. Until answered, the build uses the proposal.
-- OQ2: The webhook has a valid signature but `paid_at` cannot be parsed, and paid=true. The brief does not say. Proposed: 400, no effect. Until answered, the build uses the proposal.
