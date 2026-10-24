@@ -198,7 +198,7 @@ All route tests run on `createWorld()` data with leases created through the rout
 - [x] 3. Write `ids`, `db-dates`, `instant`, `db-errors` and `locks`, plus `tests/helpers/{http,leasing,seeded}.ts`.
 - [x] 4. Write the test files above. They fail on missing modules.
 - [x] 5. Write `allocation.ts`, `services/leases.ts` and the two lease routes. The lease tests pass. Log the real 23P01 error shape once before writing `isExclusionViolation`.
-- [ ] 6. Write `services/payments.ts` and the four payment routes. The record, decide and allocation tests pass.
+- [x] 6. Write `services/payments.ts` and the four payment routes. The record, decide and allocation tests pass.
 - [ ] 7. Write the full `scripts/seed.ts`. After `db reset` and `npm run seed`, `tests/seed` passes.
 - [ ] 8. `npx supabase db reset` → `npm test` → `npx tsc --noEmit`, all green. Update TASK.md rows to `built`, write `03-leases-payments.handoff.md`, commit.
 
