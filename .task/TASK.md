@@ -163,8 +163,6 @@ General rule (from the user): **do not add any rejection or validation the brief
 - OQ3: parseRinggitToSen when the sen value is greater than Number.MAX_SAFE_INTEGER → throws an Error (user decision).
 - A28: service_role has no grants on public tables. The admin client (secret key) is used only for auth.admin and Storage; all table access goes through Prisma (user decision).
 - A26: `supabase/seed.sql` is committed empty, so `db reset` stays clean with the current `config.toml` (accepted).
-- A29: Webhook with a valid signature and `paid` neither exactly `true` nor exactly `false` (missing, `TRUE`, `1`) → 400, no effect (user decision, Q6 A).
-- A30: `paid_at` is parsed only in the branch that creates the payment (paid=true, amount matches, bill pending or failed, after the lock). Unparseable there → 400, no effect. On an already-paid bill a bad `paid_at` is ignored → 200 none (user decision, Q7 A; resolves OQ2).
 
 ## Overrides (brief beats defaults)
 - Columns end in `_sen`, not `_cents`. JSON amounts are integer numbers, not strings.
@@ -183,7 +181,7 @@ General rule (from the user): **do not add any rejection or validation the brief
 |---|---|---|---|---|
 | 01 | foundation: Next 16 + Prisma 7 + Supabase clients, full schema, grants, RLS, storage bucket + policies, audit/payment triggers, auth helper (Bearer + cookie, roles, 401/404/403), `.env.example`, empty seed.sql | R1, R2, R4, R38–R47, R51–R53 | 40 | done |
 | 02 | billing: `lib/billing.ts` + unit tests under 3 TZs (pure, no DB; can run in parallel with 01) | R9–R18 | 20 | done |
-| 03 | leases-payments: POST/GET lease, record/approve/reject/void, allocation, cap, slip check + cleanup, audit, concurrency tests, `npm run seed` (needs 01 and 02) | R5–R8, R19–R29, R48, R49, R50 | 50 | planned |
+| 03 | leases-payments: POST/GET lease, record/approve/reject/void, allocation, cap, slip check + cleanup, audit, concurrency tests, `npm run seed` (needs 01 and 02) | R5–R8, R19–R29, R48, R49, R50 | 50 | done |
 | 04 | online-report: gateway bills, webhook, `/payments/return`, collections report endpoint, `gateway-sim.mjs` | R30–R37, R48 | 30 | planned |
 | 05 | ui: staff dashboard, leases list, lease page, record form, approve/reject/void dialogs, tenant portal, pay now, phone edit, MYT display | R3, R54–R60 | 20 | todo |
 | 06 | write-ups: REVIEW.md, DECISIONS.md, README, ai-logs | R61–R63 | 10 | todo |
@@ -225,43 +223,43 @@ General rule (from the user): **do not add any rejection or validation the brief
 | E32 | 01 | Bucket: upload 5 MB + 1 byte; upload text/plain | rejected by bucket | tests/storage/slips.test.ts | done |
 | E33 | 01 | API call with no token / bad token | 401 `{error}` | tests/auth/actor.test.ts | done |
 | E34 | 01 | Same API call with Bearer token and with session cookie | both authenticated | tests/auth/actor.test.ts | done |
-| E35 | 01 | Tenant sets user_metadata.role = 'manager', calls POST /api/payments/:id/approve on own lease's payment | 403 (role from memberships/tenants) | tests/auth/actor.test.ts (helper) + tests/payments/decide.test.ts (HTTP) | planned |
+| E35 | 01 | Tenant sets user_metadata.role = 'manager', calls POST /api/payments/:id/approve on own lease's payment | 403 (role from memberships/tenants) | tests/auth/actor.test.ts (helper) + tests/payments/decide.test.ts (HTTP) | done |
 | E36 | 01 | Secret key not in client bundle: grep `.next/static` for SUPABASE_SECRET_KEY value | no match | tests/security/secret-leak.test.ts | done |
 | E37 | 01 | Payments: DELETE row, change amount_sen, status approved → pending_verification (via Prisma) | trigger raises error | tests/db/payment-guards.test.ts | done |
-| E38 | 03 | Manager POST /api/leases on D-03-2 for Probe 2027-03-01..2027-03-31 rent 200000 deposit 0 | 201 `{id}`; invoices in DB equal generateSchedule output; audit row lease creation | tests/leases/create.test.ts | planned |
-| E39 | 03 | POST /api/leases on C-01-7 starting 2027-02-27 (Probe lease ends 2027-02-27) | 409 (inclusive overlap); starting 2027-02-28 → 201 | tests/leases/create.test.ts | planned |
-| E40 | 03 | Two concurrent POST /api/leases, same unit, overlapping dates (Promise.all) | one 201, one 409; one lease + its invoices in DB | tests/leases/create.test.ts | planned |
-| E41 | 03 | Northwind manager POST /api/leases with Beta unitId or Beta tenantId, or random uuid, or "abc" | 404; nothing created | tests/leases/create.test.ts | planned |
-| E42 | 03 | POST /api/leases as staff / as tenant | 403 | tests/leases/create.test.ts | planned |
-| E43 | 03 | POST /api/leases endDate before startDate; startDate "2026-02-30"; monthlyRentSen 0; depositSen -1; missing unitId | 400 `{error}` | tests/leases/create.test.ts | planned |
-| E44 | 03 | Lease creation fails mid-insert (forced invoice error) | no lease, no invoices (all or nothing) | tests/leases/create.test.ts | planned |
-| E45 | 03 | GET /api/leases/:aisyahLease as manager, staff, Aisyah | 200, R49 shape; 7 invoices in allocation order; deposit paidSen 300000 paid, p0 150000 paid, p1 paidSen 50000; statuses from invoiceStatus at now | tests/leases/get.test.ts | planned |
-| E46 | 03 | GET Aisyah's lease as Ben, as Beta manager, as Chen; GET with "not-a-uuid" | 404 | tests/leases/get.test.ts | planned |
-| E47 | 03 | Staff POST payment cash 50000 on Probe lease | 201 `{id, status:'pending_verification'}`; no allocations | tests/payments/record.test.ts | planned |
-| E48 | 03 | Manager POST payment cash 50000 on a lease | 201 `{status:'approved'}`; allocated per order; audit approve row | tests/payments/record.test.ts | planned |
-| E49 | 03 | Cap: lease remaining 100000, pending 60000; new 40000 → ? ; new 40001 → ? | 201; 422 | tests/payments/record.test.ts | planned |
-| E50 | 03 | Concurrent: remaining 100000, staff A posts 80000 and staff B posts 70000 at once | exactly one 201, one 422; pending total ≤ 100000 | tests/payments/record.test.ts | planned |
-| E51 | 03 | Payment amount equal to full remaining incl. future periods (pay in advance) | 201 | tests/payments/record.test.ts | planned |
-| E52 | 03 | Payment as tenant on own lease; as Beta manager on Northwind lease | 403; 404 | tests/payments/record.test.ts | planned |
-| E53 | 03 | Body: method 'online' or 'cheque'; amountSen 12.5 or "100"; receivedAt "2026-03-01T00:30:00" (no offset); missing receivedAt | 400 | tests/payments/record.test.ts | planned |
-| E54 | 03 | receivedAt "2026-03-01T00:30:00+08:00", "2026-02-28T16:30:00Z", and a future instant "2027-01-01T00:00:00+08:00" | all 201; stored received_at 2026-02-28T16:30:00Z for the first two | tests/payments/record.test.ts | planned |
-| E55 | 03 | bank_transfer without slipPath; slipPath in Beta org folder; slipPath to missing file | 400; no file deleted | tests/payments/record.test.ts | planned |
-| E56 | 03 | bank_transfer with valid uploaded slip, amount over cap | 422; slip object deleted from storage | tests/payments/record.test.ts | planned |
-| E57 | 03 | cash with slipPath "x/y.pdf" | 201; payment slip_path null | tests/payments/record.test.ts | planned |
-| E58 | 03 | Approve pending payment as manager | 200 `{status:'approved'}`; allocations created; audit row | tests/payments/decide.test.ts | planned |
-| E59 | 03 | Approve same pending payment twice concurrently | one 200, one 409; allocations sum = amount once | tests/payments/decide.test.ts | planned |
-| E60 | 03 | Approve when amount > remaining balance (other payment approved meanwhile) | 422; status stays pending_verification | tests/payments/decide.test.ts | planned |
-| E61 | 03 | Approve as staff; approve an approved/rejected/voided payment; approve Beta payment as Northwind manager | 403; 409; 404 | tests/payments/decide.test.ts | planned |
-| E62 | 03 | Reject with reason "abcd" / missing / reason "abcde" | 400 / 400 / 200 `{status:'rejected'}` + audit | tests/payments/decide.test.ts | planned |
-| E63 | 03 | Reject an approved payment with valid reason | 409 | tests/payments/decide.test.ts | planned |
-| E64 | 03 | Void approved payment, reason "wrong amount" | 200 `{status:'voided'}`; its allocations removed; other payments' allocations identical; audit row | tests/payments/decide.test.ts | planned |
-| E65 | 03 | Void pending payment; void with reason "abc" | 409; 400 | tests/payments/decide.test.ts | planned |
-| E66 | 03 | Void while lease has an online payment with unapplied_sen 10000 (Q1) | reopened invoices stay unpaid; online payment unapplied_sen still 10000; no new allocations | tests/payments/decide.test.ts | planned |
-| E67 | 03 | Allocation order: payment 400000 on fresh lease deposit 300000 + rent 150000 both due on start | deposit 300000 first, then p0 100000 | tests/payments/allocation.test.ts | planned |
-| E68 | 03 | Allocation fills not-yet-due invoices after due ones | yes, in due-date order | tests/payments/allocation.test.ts | planned |
-| E69 | 03 | Concurrent: void payment X while approving payment Y on same lease | both serialize via lease lock; final allocations consistent, sum per invoice ≤ amount | tests/payments/decide.test.ts | planned |
-| E70 | 03 | Seed on fresh `db reset`: `npm run seed` | exit 0; all 7 accounts sign in with `Rent-Test-2026!`; leases and invoices per R7 (Ben p3 50015, Aisyah p5 77419); Aisyah payments: cash 300000 → deposit; transfer 200000 → p0 150000 + p1 50000, slip in storage | tests/seed/seed.test.ts | planned |
-| E71 | 03 | `npm run seed` run a second time | exits with error, no duplicate data | tests/seed/seed.test.ts | planned |
+| E38 | 03 | Manager POST /api/leases on D-03-2 for Probe 2027-03-01..2027-03-31 rent 200000 deposit 0 | 201 `{id}`; invoices in DB equal generateSchedule output; audit row lease creation | tests/leases/create.test.ts | done |
+| E39 | 03 | POST /api/leases on C-01-7 starting 2027-02-27 (Probe lease ends 2027-02-27) | 409 (inclusive overlap); starting 2027-02-28 → 201 | tests/leases/create.test.ts | done |
+| E40 | 03 | Two concurrent POST /api/leases, same unit, overlapping dates (Promise.all) | one 201, one 409; one lease + its invoices in DB | tests/leases/create.test.ts | done |
+| E41 | 03 | Northwind manager POST /api/leases with Beta unitId or Beta tenantId, or random uuid, or "abc" | 404; nothing created | tests/leases/create.test.ts | done |
+| E42 | 03 | POST /api/leases as staff / as tenant | 403 | tests/leases/create.test.ts | done |
+| E43 | 03 | POST /api/leases endDate before startDate; startDate "2026-02-30"; monthlyRentSen 0; depositSen -1; missing unitId | 400 `{error}` | tests/leases/create.test.ts | done |
+| E44 | 03 | Lease creation fails mid-insert (forced invoice error) | no lease, no invoices (all or nothing) | tests/leases/create.test.ts | done |
+| E45 | 03 | GET /api/leases/:aisyahLease as manager, staff, Aisyah | 200, R49 shape; 7 invoices in allocation order; deposit paidSen 300000 paid, p0 150000 paid, p1 paidSen 50000; statuses from invoiceStatus at now | tests/leases/get.test.ts | done |
+| E46 | 03 | GET Aisyah's lease as Ben, as Beta manager, as Chen; GET with "not-a-uuid" | 404 | tests/leases/get.test.ts | done |
+| E47 | 03 | Staff POST payment cash 50000 on Probe lease | 201 `{id, status:'pending_verification'}`; no allocations | tests/payments/record.test.ts | done |
+| E48 | 03 | Manager POST payment cash 50000 on a lease | 201 `{status:'approved'}`; allocated per order; audit approve row | tests/payments/record.test.ts | done |
+| E49 | 03 | Cap: lease remaining 100000, pending 60000; new 40000 → ? ; new 40001 → ? | 201; 422 | tests/payments/record.test.ts | done |
+| E50 | 03 | Concurrent: remaining 100000, staff A posts 80000 and staff B posts 70000 at once | exactly one 201, one 422; pending total ≤ 100000 | tests/payments/record.test.ts | done |
+| E51 | 03 | Payment amount equal to full remaining incl. future periods (pay in advance) | 201 | tests/payments/record.test.ts | done |
+| E52 | 03 | Payment as tenant on own lease; as Beta manager on Northwind lease | 403; 404 | tests/payments/record.test.ts | done |
+| E53 | 03 | Body: method 'online' or 'cheque'; amountSen 12.5 or "100"; receivedAt "2026-03-01T00:30:00" (no offset); missing receivedAt | 400 | tests/payments/record.test.ts | done |
+| E54 | 03 | receivedAt "2026-03-01T00:30:00+08:00", "2026-02-28T16:30:00Z", and a future instant "2027-01-01T00:00:00+08:00" | all 201; stored received_at 2026-02-28T16:30:00Z for the first two | tests/payments/record.test.ts | done |
+| E55 | 03 | bank_transfer without slipPath; slipPath in Beta org folder; slipPath to missing file | 400; no file deleted | tests/payments/record.test.ts | done |
+| E56 | 03 | bank_transfer with valid uploaded slip, amount over cap | 422; slip object deleted from storage | tests/payments/record.test.ts | done |
+| E57 | 03 | cash with slipPath "x/y.pdf" | 201; payment slip_path null | tests/payments/record.test.ts | done |
+| E58 | 03 | Approve pending payment as manager | 200 `{status:'approved'}`; allocations created; audit row | tests/payments/decide.test.ts | done |
+| E59 | 03 | Approve same pending payment twice concurrently | one 200, one 409; allocations sum = amount once | tests/payments/decide.test.ts | done |
+| E60 | 03 | Approve when amount > remaining balance (other payment approved meanwhile) | 422; status stays pending_verification | tests/payments/decide.test.ts | done |
+| E61 | 03 | Approve as staff; approve an approved/rejected/voided payment; approve Beta payment as Northwind manager | 403; 409; 404 | tests/payments/decide.test.ts | done |
+| E62 | 03 | Reject with reason "abcd" / missing / reason "abcde" | 400 / 400 / 200 `{status:'rejected'}` + audit | tests/payments/decide.test.ts | done |
+| E63 | 03 | Reject an approved payment with valid reason | 409 | tests/payments/decide.test.ts | done |
+| E64 | 03 | Void approved payment, reason "wrong amount" | 200 `{status:'voided'}`; its allocations removed; other payments' allocations identical; audit row | tests/payments/decide.test.ts | done |
+| E65 | 03 | Void pending payment; void with reason "abc" | 409; 400 | tests/payments/decide.test.ts | done |
+| E66 | 03 | Void while lease has an online payment with unapplied_sen 10000 (Q1) | reopened invoices stay unpaid; online payment unapplied_sen still 10000; no new allocations | tests/payments/decide.test.ts | done |
+| E67 | 03 | Allocation order: payment 400000 on fresh lease deposit 300000 + rent 150000 both due on start | deposit 300000 first, then p0 100000 | tests/payments/allocation.test.ts | done |
+| E68 | 03 | Allocation fills not-yet-due invoices after due ones | yes, in due-date order | tests/payments/allocation.test.ts | done |
+| E69 | 03 | Concurrent: void payment X while approving payment Y on same lease | both serialize via lease lock; final allocations consistent, sum per invoice ≤ amount | tests/payments/decide.test.ts | done |
+| E70 | 03 | Seed on fresh `db reset`: `npm run seed` | exit 0; all 7 accounts sign in with `Rent-Test-2026!`; leases and invoices per R7 (Ben p3 50015, Aisyah p5 77419); Aisyah payments: cash 300000 → deposit; transfer 200000 → p0 150000 + p1 50000, slip in storage | tests/seed/seed.test.ts | done |
+| E71 | 03 | `npm run seed` run a second time | exits with error, no duplicate data | tests/seed/seed.test.ts | done |
 | E72 | 04 | Collections Northwind from=2026-01 to=2026-03 (seed) | `[{2026-01,300000},{2026-02,0},{2026-03,200000}]` (00:30 MYT Mar 1 counts in March) | tests/reports/collections.test.ts | planned |
 | E73 | 04 | Collections from=2026-03 to=2026-01; from=2026-13; from missing; to="2026-1" | 400 | tests/reports/collections.test.ts | planned |
 | E74 | 04 | Collections as tenant; no token; Beta manager 2026-01..2026-03 | 403; 401; all zero (only Beta data) | tests/reports/collections.test.ts | planned |
@@ -293,10 +291,12 @@ General rule (from the user): **do not add any rejection or validation the brief
 | E101 | 01 | Catalog check: anon has no privilege on any public table (SELECT/INSERT/UPDATE/DELETE/TRUNCATE/REFERENCES/TRIGGER), sequence, or function in public/private; anon Data API select on every table | all false; error or 0 rows on every table | tests/db/anon-catalog.test.ts | done |
 | E102 | 01 | Invoice shape: rent invoice with null period_index or null period_start; deposit with period_index 0 | rejected by `invoices_kind_shape` check | tests/db/invoice-shape.test.ts | done |
 | E103 | 01 | Fresh clone: `npm install` before `.env.local` exists (postinstall `prisma generate`), then `npm run build` | install succeeds and generates the client; build passes | manual + final-check fresh clone | done |
-| E104 | 03 | Staff uploads own-org slip, POST bank_transfer with amountSen "abc" | 400; slip object deleted from storage | tests/payments/record.test.ts | planned |
-| E105 | 03 | Lease remaining 100000: staff pending 100000 rejected → new 100000 accepted; approved 100000 voided → new 100000 accepted | 201 both times (rejected not pending; void frees allocations) | tests/payments/record.test.ts | planned |
+| E104 | 03 | Staff uploads own-org slip, POST bank_transfer with amountSen "abc" | 400; slip object deleted from storage | tests/payments/record.test.ts | done |
+| E105 | 03 | Lease remaining 100000: staff pending 100000 rejected → new 100000 accepted; approved 100000 voided → new 100000 accepted | 201 both times (rejected not pending; void frees allocations) | tests/payments/record.test.ts | done |
 | E106 | 02 | Start 2026-01-31 end 2026-02-15 rent 150000; start 2026-12-31 end 2027-03-01 rent 100 deposit 5; start 2026-02-01 end 2026-02-14 rent 1 | 85714 (16/28); 2027-02-28..2027-03-01 = 6 (2/31); exact tie 14/28 → 1 | tests/billing/schedule.test.ts | done |
+| E107 | 03 | Two concurrent bank transfers share one own-org slip on different leases: one over cap (422), one valid (201) | 422 and 201; slip file still exists (cleanup never deletes a slip a committed payment uses) | tests/payments/record.test.ts | done |
 | E100 | 06 | REVIEW.md, DECISIONS.md, README, ai-logs present | all present with required content | (set in plan) | todo |
 
 ## Open questions
 - OQ1: `amountSen` ≤ 0 on POST /api/leases/:leaseId/payments. The brief only says "integers in sen" and the cap. A 0 or negative payment passes the cap check. Proposed: 400 for amountSen ≤ 0, because a negative amount would make allocation meaningless. Until answered, the build uses the proposal.
+- OQ2: The webhook has a valid signature but `paid_at` cannot be parsed, and paid=true. The brief does not say. Proposed: 400, no effect. Until answered, the build uses the proposal.

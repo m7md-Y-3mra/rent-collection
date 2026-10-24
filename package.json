@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "seed": "node --env-file=.env.local --conditions=react-server --import tsx scripts/seed.ts",
     "lint": "eslint",
     "test": "vitest run",
     "test:billing": "node scripts/test-billing-tz.mjs",
@@ -37,6 +38,7 @@
     "prisma": "7.0.1",
     "supabase": "2.122.0",
     "tailwindcss": "^4",
+    "tsx": "4.23.15",
     "typescript": "^5",
     "vitest": "4.1.12"
   }
