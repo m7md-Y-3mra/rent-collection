@@ -186,7 +186,7 @@ General rule (from the user): **do not add any rejection or validation the brief
 | 03 | leases-payments: POST/GET lease, record/approve/reject/void, allocation, cap, slip check + cleanup, audit, concurrency tests, `npm run seed` (needs 01 and 02) | R5–R8, R19–R29, R48, R49, R50 | 50 | done |
 | 04 | online-report: gateway bills, webhook, `/payments/return`, collections report endpoint, `gateway-sim.mjs` | R30–R37, R48 | 30 | done |
 | 05 | ui: staff dashboard, leases list, lease page, record form, approve/reject/void dialogs, tenant portal, pay now, phone edit, MYT display | R3, R54–R60 | 20 | done |
-| 06 | write-ups: REVIEW.md, DECISIONS.md, README, ai-logs | R61–R63 | 10 | todo |
+| 06 | write-ups: REVIEW.md, DECISIONS.md, README, ai-logs | R61–R63 | 10 | built |
 
 ## Edge-case matrix
 | ID | Part | Scenario | Expected result | Test file | Status |
@@ -299,7 +299,7 @@ General rule (from the user): **do not add any rejection or validation the brief
 | E107 | 03 | Two concurrent bank transfers share one own-org slip on different leases: one over cap (422), one valid (201) | 422 and 201; slip file still exists (cleanup never deletes a slip a committed payment uses) | tests/payments/record.test.ts | done |
 | E108 | 04 | Webhook paid=true and paid=false for the same pending bill delivered concurrently (Promise.all ×4) | all 200; bill ends paid; exactly one payment, allocated once | tests/gateway/webhook.test.ts | done |
 | E109 | 05 | `npm run seed` after `db reset` with all parts merged (shared lib must not import Next-only modules at top level) | seed succeeds; seed tests pass | tests/seed/seed.test.ts | done |
-| E100 | 06 | REVIEW.md, DECISIONS.md, README, ai-logs present | all present with required content | (set in plan) | todo |
+| E100 | 06 | REVIEW.md, DECISIONS.md, README, ai-logs present | all present with required content | tests/docs/writeups.test.ts | built |
 
 ## Open questions
 - OQ1: `amountSen` ≤ 0 on POST /api/leases/:leaseId/payments. The brief only says "integers in sen" and the cap. A 0 or negative payment passes the cap check. Proposed: 400 for amountSen ≤ 0, because a negative amount would make allocation meaningless. Until answered, the build uses the proposal.
