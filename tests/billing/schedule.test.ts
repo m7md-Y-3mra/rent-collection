@@ -48,7 +48,19 @@ describe('schedule', () => {
   ])('E09 validation throws for %j', patch => {
     expect(() => generateSchedule({ ...base, ...patch } as Parameters<typeof generateSchedule>[0])).toThrow(Error);
   });
-  it('E10 zero deposit omits deposit', () => expect(generateSchedule(base)[0].kind).toBe('rent'));
+  it('E10 zero deposit omits deposit', () => {
+    const result = generateSchedule({ ...base, endDate: '2026-02-28' });
+    expect(result).toEqual([rent(0, '2026-01-01', '2026-01-31', 150000), rent(1, '2026-02-01', '2026-02-28', 150000)]);
+    expect(result.some(item => item.kind === 'deposit')).toBe(false);
+  });
+  it('E106 month-end start prorates over a short month and across a year boundary', () => {
+    expect(generateSchedule({ ...base, startDate: '2026-01-31', endDate: '2026-02-15' })).toEqual([rent(0, '2026-01-31', '2026-02-15', 85714)]);
+    expect(generateSchedule({ startDate: '2026-12-31', endDate: '2027-03-01', monthlyRentSen: 100, depositSen: 5 })).toEqual([
+      { kind: 'deposit', periodIndex: null, periodStart: null, periodEnd: null, dueDate: '2026-12-31', amountSen: 5 },
+      rent(0, '2026-12-31', '2027-01-30', 100), rent(1, '2027-01-31', '2027-02-27', 100), rent(2, '2027-02-28', '2027-03-01', 6),
+    ]);
+    expect(generateSchedule({ ...base, startDate: '2026-02-01', endDate: '2026-02-14', monthlyRentSen: 1 })).toEqual([rent(0, '2026-02-01', '2026-02-14', 1)]);
+  });
   it('E11 large proration uses exact arithmetic', () => {
     const result = generateSchedule({ ...base, endDate: '2026-01-16', monthlyRentSen: 900000000000 });
     expect(result[0].amountSen).toBe(Number((2n * 900000000000n * 16n + 31n) / 62n));

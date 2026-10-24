@@ -180,8 +180,8 @@ General rule (from the user): **do not add any rejection or validation the brief
 | # | Part | Requirements | Minutes | Status |
 |---|---|---|---|---|
 | 01 | foundation: Next 16 + Prisma 7 + Supabase clients, full schema, grants, RLS, storage bucket + policies, audit/payment triggers, auth helper (Bearer + cookie, roles, 401/404/403), `.env.example`, empty seed.sql | R1, R2, R4, R38–R47, R51–R53 | 40 | done |
-| 02 | billing: `lib/billing.ts` + unit tests under 3 TZs (pure, no DB; can run in parallel with 01) | R9–R18 | 20 | built |
-| 03 | leases-payments: POST/GET lease, record/approve/reject/void, allocation, cap, slip check + cleanup, audit, concurrency tests, `npm run seed` (needs 01 and 02) | R5–R8, R19–R29, R48, R49, R50 | 50 | todo |
+| 02 | billing: `lib/billing.ts` + unit tests under 3 TZs (pure, no DB; can run in parallel with 01) | R9–R18 | 20 | done |
+| 03 | leases-payments: POST/GET lease, record/approve/reject/void, allocation, cap, slip check + cleanup, audit, concurrency tests, `npm run seed` (needs 01 and 02) | R5–R8, R19–R29, R48, R49, R50 | 50 | planned |
 | 04 | online-report: gateway bills, webhook, `/payments/return`, collections report endpoint, `gateway-sim.mjs` | R30–R37, R48 | 30 | todo |
 | 05 | ui: staff dashboard, leases list, lease page, record form, approve/reject/void dialogs, tenant portal, pay now, phone edit, MYT display | R3, R54–R60 | 20 | todo |
 | 06 | write-ups: REVIEW.md, DECISIONS.md, README, ai-logs | R61–R63 | 10 | todo |
@@ -189,25 +189,25 @@ General rule (from the user): **do not add any rejection or validation the brief
 ## Edge-case matrix
 | ID | Part | Scenario | Expected result | Test file | Status |
 |---|---|---|---|---|---|
-| E01 | 02 | generateSchedule Aisyah: 2026-01-31..2026-07-15, rent 150000, deposit 300000 | 7 items: deposit null-periods due 2026-01-31 300000; p0 01-31..02-27 due 01-31 150000; p1 02-28..03-30; p2 03-31..04-29; p3 04-30..05-30; p4 05-31..06-29 (all 150000); p5 06-30..07-15 due 06-30 77419 | tests/billing/schedule.test.ts | built |
-| E02 | 02 | Ben: 2026-01-01..2026-04-15, rent 100029, deposit 0 | No deposit. p0 01-01..01-31, p1 02-01..02-28, p2 03-01..03-31 each 100029; p3 04-01..04-15 = 100029×15/30 = 50014.5 → 50015 (half up) | tests/billing/schedule.test.ts | built |
-| E03 | 02 | Probe: 2026-02-28..2027-02-27, rent 200000, deposit 400000 | deposit + 12 periods; anchors 28th each month; p11 2027-01-28..2027-02-27 full → 200000 | tests/billing/schedule.test.ts | built |
-| E04 | 02 | Leap: start 2028-01-31, end 2028-03-30, rent 150000, deposit 0 | anchors 01-31, 02-29, 03-31; p0 01-31..02-28, p1 02-29..03-30 full → 150000; 2 periods | tests/billing/schedule.test.ts | built |
-| E05 | 02 | Start 2024-02-29, end 2025-03-28, rent 100000 | anchor 12 = 2025-02-28, anchor 13 = 2025-03-29 (counted from start, not previous anchor); p12 2025-02-28..2025-03-28 full → 100000 | tests/billing/schedule.test.ts | built |
-| E06 | 02 | endDate = startDate: 2026-03-10..2026-03-10, rent 310000, deposit 0 | 1 period 03-10..03-10, full period 03-10..04-09 = 31 days, amount 310000×1/31 = 10000 | tests/billing/schedule.test.ts | built |
-| E07 | 02 | Last period exactly full: 2026-01-01..2026-01-31 rent 150000 | 1 period 01-01..01-31 amount 150000 | tests/billing/schedule.test.ts | built |
-| E08 | 02 | Prorate rounds to 0: 2026-01-01..2026-01-01, rent 1 | 1 period amount 0 (1×1/31 → 0), still returned | tests/billing/schedule.test.ts | built |
-| E09 | 02 | Validation: start "2026-02-30", "2026-2-03", "2026/02/03", end before start, rent 0, rent 1.5, rent -100, deposit -1, deposit 0.5 | each throws Error | tests/billing/schedule.test.ts | built |
-| E10 | 02 | depositSen 0 | no deposit invoice; first item is p0 | tests/billing/schedule.test.ts | built |
-| E11 | 02 | Large rent 900000000000 × 16/31 proration | exact BigInt half-up result, integer | tests/billing/schedule.test.ts | built |
-| E12 | 02 | invoiceStatus due 2026-03-01 amount 1000 paid 0; now 2026-03-01T15:59:59.999Z vs 2026-03-01T16:00:00Z | unpaid vs overdue | tests/billing/status.test.ts | built |
-| E13 | 02 | invoiceStatus paid 1000 (and 1500) of 1000, now long after due | paid | tests/billing/status.test.ts | built |
-| E14 | 02 | paid 500 of 1000; now before overdue vs after | partially_paid vs overdue | tests/billing/status.test.ts | built |
-| E15 | 02 | now 2026-02-28T17:00:00Z (= 03-01 01:00 MYT), due 2026-03-01 | unpaid (today = due date, not after) | tests/billing/status.test.ts | built |
-| E16 | 02 | All billing tests under TZ=UTC, Asia/Kuala_Lumpur, America/New_York (incl. US DST dates 2026-03-08, 2026-11-01) | identical results | tests/billing/purity.test.ts | built |
-| E17 | 02 | parseRinggitToSen "1,500.50", "1.15", "7", "  12.3 ", "1,234,567.89", "0", "0.05" | 150050, 115, 700, 1230, 123456789, 0, 5 | tests/billing/parse.test.ts | built |
-| E18 | 02 | parseRinggitToSen "", "-5", "1.234", "1e3", "RM 10", "1,23", "1,5000", ",500", "1.", ".5", "1 000", "12,34.5" | each throws Error | tests/billing/parse.test.ts | built |
-| E19 | 02 | billing.ts imports | no imports from next, react, supabase, prisma; no I/O | tests/billing/purity.test.ts | built |
+| E01 | 02 | generateSchedule Aisyah: 2026-01-31..2026-07-15, rent 150000, deposit 300000 | 7 items: deposit null-periods due 2026-01-31 300000; p0 01-31..02-27 due 01-31 150000; p1 02-28..03-30; p2 03-31..04-29; p3 04-30..05-30; p4 05-31..06-29 (all 150000); p5 06-30..07-15 due 06-30 77419 | tests/billing/schedule.test.ts | done |
+| E02 | 02 | Ben: 2026-01-01..2026-04-15, rent 100029, deposit 0 | No deposit. p0 01-01..01-31, p1 02-01..02-28, p2 03-01..03-31 each 100029; p3 04-01..04-15 = 100029×15/30 = 50014.5 → 50015 (half up) | tests/billing/schedule.test.ts | done |
+| E03 | 02 | Probe: 2026-02-28..2027-02-27, rent 200000, deposit 400000 | deposit + 12 periods; anchors 28th each month; p11 2027-01-28..2027-02-27 full → 200000 | tests/billing/schedule.test.ts | done |
+| E04 | 02 | Leap: start 2028-01-31, end 2028-03-30, rent 150000, deposit 0 | anchors 01-31, 02-29, 03-31; p0 01-31..02-28, p1 02-29..03-30 full → 150000; 2 periods | tests/billing/schedule.test.ts | done |
+| E05 | 02 | Start 2024-02-29, end 2025-03-28, rent 100000 | anchor 12 = 2025-02-28, anchor 13 = 2025-03-29 (counted from start, not previous anchor); p12 2025-02-28..2025-03-28 full → 100000 | tests/billing/schedule.test.ts | done |
+| E06 | 02 | endDate = startDate: 2026-03-10..2026-03-10, rent 310000, deposit 0 | 1 period 03-10..03-10, full period 03-10..04-09 = 31 days, amount 310000×1/31 = 10000 | tests/billing/schedule.test.ts | done |
+| E07 | 02 | Last period exactly full: 2026-01-01..2026-01-31 rent 150000 | 1 period 01-01..01-31 amount 150000 | tests/billing/schedule.test.ts | done |
+| E08 | 02 | Prorate rounds to 0: 2026-01-01..2026-01-01, rent 1 | 1 period amount 0 (1×1/31 → 0), still returned | tests/billing/schedule.test.ts | done |
+| E09 | 02 | Validation: start "2026-02-30", "2026-2-03", "2026/02/03", end before start, rent 0, rent 1.5, rent -100, deposit -1, deposit 0.5 | each throws Error | tests/billing/schedule.test.ts | done |
+| E10 | 02 | depositSen 0 | no deposit invoice; first item is p0 | tests/billing/schedule.test.ts | done |
+| E11 | 02 | Large rent 900000000000 × 16/31 proration | exact BigInt half-up result, integer | tests/billing/schedule.test.ts | done |
+| E12 | 02 | invoiceStatus due 2026-03-01 amount 1000 paid 0; now 2026-03-01T15:59:59.999Z vs 2026-03-01T16:00:00Z | unpaid vs overdue | tests/billing/status.test.ts | done |
+| E13 | 02 | invoiceStatus paid 1000 (and 1500) of 1000, now long after due | paid | tests/billing/status.test.ts | done |
+| E14 | 02 | paid 500 of 1000; now before overdue vs after | partially_paid vs overdue | tests/billing/status.test.ts | done |
+| E15 | 02 | now 2026-02-28T17:00:00Z (= 03-01 01:00 MYT), due 2026-03-01 | unpaid (today = due date, not after) | tests/billing/status.test.ts | done |
+| E16 | 02 | All billing tests under TZ=UTC, Asia/Kuala_Lumpur, America/New_York (incl. US DST dates 2026-03-08, 2026-11-01) | identical results | tests/billing/purity.test.ts | done |
+| E17 | 02 | parseRinggitToSen "1,500.50", "1.15", "7", "  12.3 ", "1,234,567.89", "0", "0.05" | 150050, 115, 700, 1230, 123456789, 0, 5 | tests/billing/parse.test.ts | done |
+| E18 | 02 | parseRinggitToSen "", "-5", "1.234", "1e3", "RM 10", "1,23", "1,5000", ",500", "1.", ".5", "1 000", "12,34.5" | each throws Error | tests/billing/parse.test.ts | done |
+| E19 | 02 | billing.ts imports | no imports from next, react, supabase, prisma; no I/O | tests/billing/purity.test.ts | done |
 | E20 | 01 | anon (publishable key, no token) selects every table | 0 rows or permission denied on all 10 tables | tests/db/data-api-read.test.ts | done |
 | E21 | 01 | Aisyah token: select leases, invoices, payments, payment_allocations, gateway_bills, units | only rows of her lease A-12-3; units only A-12-3 | tests/db/data-api-read.test.ts | done |
 | E22 | 01 | Aisyah token: select tenants, memberships, audit_log, organizations | tenants own row only; memberships 0; audit_log 0; organizations Northwind only | tests/db/data-api-read.test.ts | done |
@@ -223,43 +223,43 @@ General rule (from the user): **do not add any rejection or validation the brief
 | E32 | 01 | Bucket: upload 5 MB + 1 byte; upload text/plain | rejected by bucket | tests/storage/slips.test.ts | done |
 | E33 | 01 | API call with no token / bad token | 401 `{error}` | tests/auth/actor.test.ts | done |
 | E34 | 01 | Same API call with Bearer token and with session cookie | both authenticated | tests/auth/actor.test.ts | done |
-| E35 | 01 | Tenant sets user_metadata.role = 'manager', calls POST /api/payments/:id/approve on own lease's payment | 403 (role from memberships/tenants) | tests/auth/actor.test.ts (helper) + part 03 approve route test | built |
+| E35 | 01 | Tenant sets user_metadata.role = 'manager', calls POST /api/payments/:id/approve on own lease's payment | 403 (role from memberships/tenants) | tests/auth/actor.test.ts (helper) + tests/payments/decide.test.ts (HTTP) | planned |
 | E36 | 01 | Secret key not in client bundle: grep `.next/static` for SUPABASE_SECRET_KEY value | no match | tests/security/secret-leak.test.ts | done |
 | E37 | 01 | Payments: DELETE row, change amount_sen, status approved → pending_verification (via Prisma) | trigger raises error | tests/db/payment-guards.test.ts | done |
-| E38 | 03 | Manager POST /api/leases on D-03-2 for Probe 2027-03-01..2027-03-31 rent 200000 deposit 0 | 201 `{id}`; invoices in DB equal generateSchedule output; audit row lease creation | (set in plan) | todo |
-| E39 | 03 | POST /api/leases on C-01-7 starting 2027-02-27 (Probe lease ends 2027-02-27) | 409 (inclusive overlap); starting 2027-02-28 → 201 | (set in plan) | todo |
-| E40 | 03 | Two concurrent POST /api/leases, same unit, overlapping dates (Promise.all) | one 201, one 409; one lease + its invoices in DB | (set in plan) | todo |
-| E41 | 03 | Northwind manager POST /api/leases with Beta unitId or Beta tenantId, or random uuid, or "abc" | 404; nothing created | (set in plan) | todo |
-| E42 | 03 | POST /api/leases as staff / as tenant | 403 | (set in plan) | todo |
-| E43 | 03 | POST /api/leases endDate before startDate; startDate "2026-02-30"; monthlyRentSen 0; depositSen -1; missing unitId | 400 `{error}` | (set in plan) | todo |
-| E44 | 03 | Lease creation fails mid-insert (forced invoice error) | no lease, no invoices (all or nothing) | (set in plan) | todo |
-| E45 | 03 | GET /api/leases/:aisyahLease as manager, staff, Aisyah | 200, R49 shape; 7 invoices in allocation order; deposit paidSen 300000 paid, p0 150000 paid, p1 paidSen 50000; statuses from invoiceStatus at now | (set in plan) | todo |
-| E46 | 03 | GET Aisyah's lease as Ben, as Beta manager, as Chen; GET with "not-a-uuid" | 404 | (set in plan) | todo |
-| E47 | 03 | Staff POST payment cash 50000 on Probe lease | 201 `{id, status:'pending_verification'}`; no allocations | (set in plan) | todo |
-| E48 | 03 | Manager POST payment cash 50000 on a lease | 201 `{status:'approved'}`; allocated per order; audit approve row | (set in plan) | todo |
-| E49 | 03 | Cap: lease remaining 100000, pending 60000; new 40000 → ? ; new 40001 → ? | 201; 422 | (set in plan) | todo |
-| E50 | 03 | Concurrent: remaining 100000, staff A posts 80000 and staff B posts 70000 at once | exactly one 201, one 422; pending total ≤ 100000 | (set in plan) | todo |
-| E51 | 03 | Payment amount equal to full remaining incl. future periods (pay in advance) | 201 | (set in plan) | todo |
-| E52 | 03 | Payment as tenant on own lease; as Beta manager on Northwind lease | 403; 404 | (set in plan) | todo |
-| E53 | 03 | Body: method 'online' or 'cheque'; amountSen 12.5 or "100"; receivedAt "2026-03-01T00:30:00" (no offset); missing receivedAt | 400 | (set in plan) | todo |
-| E54 | 03 | receivedAt "2026-03-01T00:30:00+08:00", "2026-02-28T16:30:00Z", and a future instant "2027-01-01T00:00:00+08:00" | all 201; stored received_at 2026-02-28T16:30:00Z for the first two | (set in plan) | todo |
-| E55 | 03 | bank_transfer without slipPath; slipPath in Beta org folder; slipPath to missing file | 400; no file deleted | (set in plan) | todo |
-| E56 | 03 | bank_transfer with valid uploaded slip, amount over cap | 422; slip object deleted from storage | (set in plan) | todo |
-| E57 | 03 | cash with slipPath "x/y.pdf" | 201; payment slip_path null | (set in plan) | todo |
-| E58 | 03 | Approve pending payment as manager | 200 `{status:'approved'}`; allocations created; audit row | (set in plan) | todo |
-| E59 | 03 | Approve same pending payment twice concurrently | one 200, one 409; allocations sum = amount once | (set in plan) | todo |
-| E60 | 03 | Approve when amount > remaining balance (other payment approved meanwhile) | 422; status stays pending_verification | (set in plan) | todo |
-| E61 | 03 | Approve as staff; approve an approved/rejected/voided payment; approve Beta payment as Northwind manager | 403; 409; 404 | (set in plan) | todo |
-| E62 | 03 | Reject with reason "abcd" / missing / reason "abcde" | 400 / 400 / 200 `{status:'rejected'}` + audit | (set in plan) | todo |
-| E63 | 03 | Reject an approved payment with valid reason | 409 | (set in plan) | todo |
-| E64 | 03 | Void approved payment, reason "wrong amount" | 200 `{status:'voided'}`; its allocations removed; other payments' allocations identical; audit row | (set in plan) | todo |
-| E65 | 03 | Void pending payment; void with reason "abc" | 409; 400 | (set in plan) | todo |
-| E66 | 03 | Void while lease has an online payment with unapplied_sen 10000 (Q1) | reopened invoices stay unpaid; online payment unapplied_sen still 10000; no new allocations | (set in plan) | todo |
-| E67 | 03 | Allocation order: payment 400000 on fresh lease deposit 300000 + rent 150000 both due on start | deposit 300000 first, then p0 100000 | (set in plan) | todo |
-| E68 | 03 | Allocation fills not-yet-due invoices after due ones | yes, in due-date order | (set in plan) | todo |
-| E69 | 03 | Concurrent: void payment X while approving payment Y on same lease | both serialize via lease lock; final allocations consistent, sum per invoice ≤ amount | (set in plan) | todo |
-| E70 | 03 | Seed on fresh `db reset`: `npm run seed` | exit 0; all 7 accounts sign in with `Rent-Test-2026!`; leases and invoices per R7 (Ben p3 50015, Aisyah p5 77419); Aisyah payments: cash 300000 → deposit; transfer 200000 → p0 150000 + p1 50000, slip in storage | (set in plan) | todo |
-| E71 | 03 | `npm run seed` run a second time | exits with error, no duplicate data | (set in plan) | todo |
+| E38 | 03 | Manager POST /api/leases on D-03-2 for Probe 2027-03-01..2027-03-31 rent 200000 deposit 0 | 201 `{id}`; invoices in DB equal generateSchedule output; audit row lease creation | tests/leases/create.test.ts | planned |
+| E39 | 03 | POST /api/leases on C-01-7 starting 2027-02-27 (Probe lease ends 2027-02-27) | 409 (inclusive overlap); starting 2027-02-28 → 201 | tests/leases/create.test.ts | planned |
+| E40 | 03 | Two concurrent POST /api/leases, same unit, overlapping dates (Promise.all) | one 201, one 409; one lease + its invoices in DB | tests/leases/create.test.ts | planned |
+| E41 | 03 | Northwind manager POST /api/leases with Beta unitId or Beta tenantId, or random uuid, or "abc" | 404; nothing created | tests/leases/create.test.ts | planned |
+| E42 | 03 | POST /api/leases as staff / as tenant | 403 | tests/leases/create.test.ts | planned |
+| E43 | 03 | POST /api/leases endDate before startDate; startDate "2026-02-30"; monthlyRentSen 0; depositSen -1; missing unitId | 400 `{error}` | tests/leases/create.test.ts | planned |
+| E44 | 03 | Lease creation fails mid-insert (forced invoice error) | no lease, no invoices (all or nothing) | tests/leases/create.test.ts | planned |
+| E45 | 03 | GET /api/leases/:aisyahLease as manager, staff, Aisyah | 200, R49 shape; 7 invoices in allocation order; deposit paidSen 300000 paid, p0 150000 paid, p1 paidSen 50000; statuses from invoiceStatus at now | tests/leases/get.test.ts | planned |
+| E46 | 03 | GET Aisyah's lease as Ben, as Beta manager, as Chen; GET with "not-a-uuid" | 404 | tests/leases/get.test.ts | planned |
+| E47 | 03 | Staff POST payment cash 50000 on Probe lease | 201 `{id, status:'pending_verification'}`; no allocations | tests/payments/record.test.ts | planned |
+| E48 | 03 | Manager POST payment cash 50000 on a lease | 201 `{status:'approved'}`; allocated per order; audit approve row | tests/payments/record.test.ts | planned |
+| E49 | 03 | Cap: lease remaining 100000, pending 60000; new 40000 → ? ; new 40001 → ? | 201; 422 | tests/payments/record.test.ts | planned |
+| E50 | 03 | Concurrent: remaining 100000, staff A posts 80000 and staff B posts 70000 at once | exactly one 201, one 422; pending total ≤ 100000 | tests/payments/record.test.ts | planned |
+| E51 | 03 | Payment amount equal to full remaining incl. future periods (pay in advance) | 201 | tests/payments/record.test.ts | planned |
+| E52 | 03 | Payment as tenant on own lease; as Beta manager on Northwind lease | 403; 404 | tests/payments/record.test.ts | planned |
+| E53 | 03 | Body: method 'online' or 'cheque'; amountSen 12.5 or "100"; receivedAt "2026-03-01T00:30:00" (no offset); missing receivedAt | 400 | tests/payments/record.test.ts | planned |
+| E54 | 03 | receivedAt "2026-03-01T00:30:00+08:00", "2026-02-28T16:30:00Z", and a future instant "2027-01-01T00:00:00+08:00" | all 201; stored received_at 2026-02-28T16:30:00Z for the first two | tests/payments/record.test.ts | planned |
+| E55 | 03 | bank_transfer without slipPath; slipPath in Beta org folder; slipPath to missing file | 400; no file deleted | tests/payments/record.test.ts | planned |
+| E56 | 03 | bank_transfer with valid uploaded slip, amount over cap | 422; slip object deleted from storage | tests/payments/record.test.ts | planned |
+| E57 | 03 | cash with slipPath "x/y.pdf" | 201; payment slip_path null | tests/payments/record.test.ts | planned |
+| E58 | 03 | Approve pending payment as manager | 200 `{status:'approved'}`; allocations created; audit row | tests/payments/decide.test.ts | planned |
+| E59 | 03 | Approve same pending payment twice concurrently | one 200, one 409; allocations sum = amount once | tests/payments/decide.test.ts | planned |
+| E60 | 03 | Approve when amount > remaining balance (other payment approved meanwhile) | 422; status stays pending_verification | tests/payments/decide.test.ts | planned |
+| E61 | 03 | Approve as staff; approve an approved/rejected/voided payment; approve Beta payment as Northwind manager | 403; 409; 404 | tests/payments/decide.test.ts | planned |
+| E62 | 03 | Reject with reason "abcd" / missing / reason "abcde" | 400 / 400 / 200 `{status:'rejected'}` + audit | tests/payments/decide.test.ts | planned |
+| E63 | 03 | Reject an approved payment with valid reason | 409 | tests/payments/decide.test.ts | planned |
+| E64 | 03 | Void approved payment, reason "wrong amount" | 200 `{status:'voided'}`; its allocations removed; other payments' allocations identical; audit row | tests/payments/decide.test.ts | planned |
+| E65 | 03 | Void pending payment; void with reason "abc" | 409; 400 | tests/payments/decide.test.ts | planned |
+| E66 | 03 | Void while lease has an online payment with unapplied_sen 10000 (Q1) | reopened invoices stay unpaid; online payment unapplied_sen still 10000; no new allocations | tests/payments/decide.test.ts | planned |
+| E67 | 03 | Allocation order: payment 400000 on fresh lease deposit 300000 + rent 150000 both due on start | deposit 300000 first, then p0 100000 | tests/payments/allocation.test.ts | planned |
+| E68 | 03 | Allocation fills not-yet-due invoices after due ones | yes, in due-date order | tests/payments/allocation.test.ts | planned |
+| E69 | 03 | Concurrent: void payment X while approving payment Y on same lease | both serialize via lease lock; final allocations consistent, sum per invoice ≤ amount | tests/payments/decide.test.ts | planned |
+| E70 | 03 | Seed on fresh `db reset`: `npm run seed` | exit 0; all 7 accounts sign in with `Rent-Test-2026!`; leases and invoices per R7 (Ben p3 50015, Aisyah p5 77419); Aisyah payments: cash 300000 → deposit; transfer 200000 → p0 150000 + p1 50000, slip in storage | tests/seed/seed.test.ts | planned |
+| E71 | 03 | `npm run seed` run a second time | exits with error, no duplicate data | tests/seed/seed.test.ts | planned |
 | E72 | 04 | Collections Northwind from=2026-01 to=2026-03 (seed) | `[{2026-01,300000},{2026-02,0},{2026-03,200000}]` (00:30 MYT Mar 1 counts in March) | (set in plan) | todo |
 | E73 | 04 | Collections from=2026-03 to=2026-01; from=2026-13; from missing; to="2026-1" | 400 | (set in plan) | todo |
 | E74 | 04 | Collections as tenant; no token; Beta manager 2026-01..2026-03 | 403; 401; all zero (only Beta data) | (set in plan) | todo |
@@ -291,6 +291,9 @@ General rule (from the user): **do not add any rejection or validation the brief
 | E101 | 01 | Catalog check: anon has no privilege on any public table (SELECT/INSERT/UPDATE/DELETE/TRUNCATE/REFERENCES/TRIGGER), sequence, or function in public/private; anon Data API select on every table | all false; error or 0 rows on every table | tests/db/anon-catalog.test.ts | done |
 | E102 | 01 | Invoice shape: rent invoice with null period_index or null period_start; deposit with period_index 0 | rejected by `invoices_kind_shape` check | tests/db/invoice-shape.test.ts | done |
 | E103 | 01 | Fresh clone: `npm install` before `.env.local` exists (postinstall `prisma generate`), then `npm run build` | install succeeds and generates the client; build passes | manual + final-check fresh clone | done |
+| E104 | 03 | Staff uploads own-org slip, POST bank_transfer with amountSen "abc" | 400; slip object deleted from storage | tests/payments/record.test.ts | planned |
+| E105 | 03 | Lease remaining 100000: staff pending 100000 rejected → new 100000 accepted; approved 100000 voided → new 100000 accepted | 201 both times (rejected not pending; void frees allocations) | tests/payments/record.test.ts | planned |
+| E106 | 02 | Start 2026-01-31 end 2026-02-15 rent 150000; start 2026-12-31 end 2027-03-01 rent 100 deposit 5; start 2026-02-01 end 2026-02-14 rent 1 | 85714 (16/28); 2027-02-28..2027-03-01 = 6 (2/31); exact tie 14/28 → 1 | tests/billing/schedule.test.ts | done |
 | E100 | 06 | REVIEW.md, DECISIONS.md, README, ai-logs present | all present with required content | (set in plan) | todo |
 
 ## Open questions
