@@ -45,6 +45,7 @@ describe('schedule', () => {
     { startDate: '2026-02-30' }, { startDate: '2026-2-03' }, { startDate: '2026/02/03' }, { startDate: '2025-02-29' }, { startDate: '' },
     { endDate: '2025-12-31' }, { endDate: '2026-04-31' }, { monthlyRentSen: 0 }, { monthlyRentSen: 1.5 }, { monthlyRentSen: -100 },
     { monthlyRentSen: NaN }, { monthlyRentSen: Infinity }, { monthlyRentSen: '100' }, { depositSen: -1 }, { depositSen: 0.5 }, { depositSen: NaN },
+    { monthlyRentSen: 2 ** 53 }, { depositSen: 2 ** 53 },
   ])('E09 validation throws for %j', patch => {
     expect(() => generateSchedule({ ...base, ...patch } as Parameters<typeof generateSchedule>[0])).toThrow(Error);
   });

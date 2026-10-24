@@ -68,6 +68,19 @@ it('E43 invalid body is 400', async () => {
   }
   expect((await post(null)).status).toBe(400);
 });
+it('amounts past Number.MAX_SAFE_INTEGER are 400, not silently rounded', async () => {
+  const unit = await freshUnit(w.orgA.id);
+  // 9007199254740993 parses to 9007199254740992 in JSON.parse, so it must be sent as raw text.
+  const raw = `{"unitId":"${unit.id}","tenantId":"${w.a1.tenant.id}","startDate":"2027-03-01","endDate":"2027-03-31","monthlyRentSen":9007199254740993,"depositSen":0}`;
+  const request = new Request('http://test/api/leases', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', authorization: `Bearer ${await w.token(w.managerA)}` },
+    body: raw,
+  });
+  const response = await POST(request);
+  expect(response.status).toBe(400);
+  expect(await prisma.leases.count({ where: { unit_id: unit.id } })).toBe(0);
+});
 it('E44 duplicate schedule period rolls back lease, invoices and audit', async () => {
   const unit = await freshUnit(w.orgA.id);
   const schedule = generateSchedule(dates);

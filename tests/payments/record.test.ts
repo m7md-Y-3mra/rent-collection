@@ -72,7 +72,7 @@ it('E53 invalid methods, amounts and instants are 400', async () => {
   const lease = await leaseVia(w);
   for (const patch of [
     { method: 'online' }, { method: 'cheque' }, { amountSen: 12.5 }, { amountSen: '100' },
-    { amountSen: 0 }, { amountSen: -1 }, { receivedAt: '2026-03-01T00:30:00' }, { receivedAt: undefined },
+    { amountSen: 0 }, { amountSen: -1 }, { amountSen: 2 ** 53 }, { receivedAt: '2026-03-01T00:30:00' }, { receivedAt: undefined },
     { receivedAt: '2026-02-30T00:30:00+08:00' }, { receivedAt: '2026-03-01T24:30:00Z' },
     { receivedAt: '2026-03-01T00:60:00Z' }, { receivedAt: '2026-03-01T00:30:60Z' },
     { receivedAt: '2026-03-01T00:30:00+24:00' }, { receivedAt: '2026-03-01T00:30:00+08:60' },

@@ -26,7 +26,12 @@ export function PhoneForm({
       if (!result.ok) {
         setError(result.message);
         toast.error(result.message);
-      } else toast.success('Phone number saved.');
+      } else {
+        setValue(result.phone ?? '');
+        toast.success(
+          result.phone ? 'Phone number saved.' : 'Phone number removed.'
+        );
+      }
     } catch {
       setError('Could not save your phone number.');
       toast.error('Could not save your phone number.');
