@@ -1,0 +1,2 @@
+- Plan 01 granted SELECT on public tables to service_role; the user corrected it: service_role gets no table grants, and the admin client is only for auth.admin and Storage (user reviewed the plan).
+- Ran `npx supabase migration new` with a pipe; the CLI waited on stdin and hung. Use `</dev/null`. (found while reviewing part 01)

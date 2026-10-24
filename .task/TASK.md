@@ -179,7 +179,7 @@ General rule (from the user): **do not add any rejection or validation the brief
 ## Parts
 | # | Part | Requirements | Minutes | Status |
 |---|---|---|---|---|
-| 01 | foundation: Next 16 + Prisma 7 + Supabase clients, full schema, grants, RLS, storage bucket + policies, audit/payment triggers, auth helper (Bearer + cookie, roles, 401/404/403), `.env.example`, empty seed.sql | R1, R2, R4, R38–R47, R51–R53 | 40 | built |
+| 01 | foundation: Next 16 + Prisma 7 + Supabase clients, full schema, grants, RLS, storage bucket + policies, audit/payment triggers, auth helper (Bearer + cookie, roles, 401/404/403), `.env.example`, empty seed.sql | R1, R2, R4, R38–R47, R51–R53 | 40 | done |
 | 02 | billing: `lib/billing.ts` + unit tests under 3 TZs (pure, no DB; can run in parallel with 01) | R9–R18 | 20 | planned |
 | 03 | leases-payments: POST/GET lease, record/approve/reject/void, allocation, cap, slip check + cleanup, audit, concurrency tests, `npm run seed` (needs 01 and 02) | R5–R8, R19–R29, R48, R49, R50 | 50 | todo |
 | 04 | online-report: gateway bills, webhook, `/payments/return`, collections report endpoint, `gateway-sim.mjs` | R30–R37, R48 | 30 | todo |
@@ -208,24 +208,24 @@ General rule (from the user): **do not add any rejection or validation the brief
 | E17 | 02 | parseRinggitToSen "1,500.50", "1.15", "7", "  12.3 ", "1,234,567.89", "0", "0.05" | 150050, 115, 700, 1230, 123456789, 0, 5 | tests/billing/parse.test.ts | planned |
 | E18 | 02 | parseRinggitToSen "", "-5", "1.234", "1e3", "RM 10", "1,23", "1,5000", ",500", "1.", ".5", "1 000", "12,34.5" | each throws Error | tests/billing/parse.test.ts | planned |
 | E19 | 02 | billing.ts imports | no imports from next, react, supabase, prisma; no I/O | tests/billing/purity.test.ts | planned |
-| E20 | 01 | anon (publishable key, no token) selects every table | 0 rows or permission denied on all 10 tables | tests/db/data-api-read.test.ts | built |
-| E21 | 01 | Aisyah token: select leases, invoices, payments, payment_allocations, gateway_bills, units | only rows of her lease A-12-3; units only A-12-3 | tests/db/data-api-read.test.ts | built |
-| E22 | 01 | Aisyah token: select tenants, memberships, audit_log, organizations | tenants own row only; memberships 0; audit_log 0; organizations Northwind only | tests/db/data-api-read.test.ts | built |
-| E23 | 01 | Aisyah PATCH tenants own phone "+60 12-345 6789"; PATCH full_name; PATCH Ben's phone | phone updated; full_name fails; Ben's row unchanged (0 rows) | tests/db/data-api-write.test.ts | built |
-| E24 | 01 | Phone "" or 31 chars via Data API | fails (check constraint); null ok | tests/db/data-api-write.test.ts | built |
-| E25 | 01 | staff token selects audit_log; manager token selects audit_log | staff 0 rows; manager only Northwind rows | tests/db/data-api-read.test.ts | built |
-| E26 | 01 | Beta manager token selects Northwind leases/payments/tenants | 0 rows | tests/db/data-api-read.test.ts | built |
-| E27 | 01 | manager token INSERT/UPDATE/DELETE via Data API on every table; POST /rest/v1/rpc/<any function> | all fail | tests/db/data-api-write.test.ts | built |
-| E28 | 01 | audit_log UPDATE, DELETE, TRUNCATE as postgres owner (Prisma) and service role | all raise errors; rows unchanged | tests/db/audit-log.test.ts | built |
-| E29 | 01 | Storage: Northwind staff uploads `<northwind_org>/a.pdf`; uploads `<beta_org>/a.pdf` | first ok; second denied | tests/storage/slips.test.ts | built |
-| E30 | 01 | Storage: tenant upload, tenant read/list, anon read/list, Beta manager read Northwind slip | all denied | tests/storage/slips.test.ts | built |
-| E31 | 01 | Storage: manager creates signed URL for own org slip; update/delete object via API | URL works; update/delete denied | tests/storage/slips.test.ts | built |
-| E32 | 01 | Bucket: upload 5 MB + 1 byte; upload text/plain | rejected by bucket | tests/storage/slips.test.ts | built |
-| E33 | 01 | API call with no token / bad token | 401 `{error}` | tests/auth/actor.test.ts | built |
-| E34 | 01 | Same API call with Bearer token and with session cookie | both authenticated | tests/auth/actor.test.ts | built |
-| E35 | 01 | Tenant sets user_metadata.role = 'manager', calls POST /api/payments/:id/approve on own lease's payment | 403 (role from memberships/tenants) | tests/auth/actor.test.ts | built |
-| E36 | 01 | Secret key not in client bundle: grep `.next/static` for SUPABASE_SECRET_KEY value | no match | tests/security/secret-leak.test.ts | built |
-| E37 | 01 | Payments: DELETE row, change amount_sen, status approved → pending_verification (via Prisma) | trigger raises error | tests/db/payment-guards.test.ts | built |
+| E20 | 01 | anon (publishable key, no token) selects every table | 0 rows or permission denied on all 10 tables | tests/db/data-api-read.test.ts | done |
+| E21 | 01 | Aisyah token: select leases, invoices, payments, payment_allocations, gateway_bills, units | only rows of her lease A-12-3; units only A-12-3 | tests/db/data-api-read.test.ts | done |
+| E22 | 01 | Aisyah token: select tenants, memberships, audit_log, organizations | tenants own row only; memberships 0; audit_log 0; organizations Northwind only | tests/db/data-api-read.test.ts | done |
+| E23 | 01 | Aisyah PATCH tenants own phone "+60 12-345 6789"; PATCH full_name; PATCH Ben's phone | phone updated; full_name fails; Ben's row unchanged (0 rows) | tests/db/data-api-write.test.ts | done |
+| E24 | 01 | Phone "" or 31 chars via Data API | fails (check constraint); null ok | tests/db/data-api-write.test.ts | done |
+| E25 | 01 | staff token selects audit_log; manager token selects audit_log | staff 0 rows; manager only Northwind rows | tests/db/data-api-read.test.ts | done |
+| E26 | 01 | Beta manager token selects Northwind leases/payments/tenants | 0 rows | tests/db/data-api-read.test.ts | done |
+| E27 | 01 | manager token INSERT/UPDATE/DELETE via Data API on every table; POST /rest/v1/rpc/<any function> | all fail | tests/db/data-api-write.test.ts | done |
+| E28 | 01 | audit_log UPDATE, DELETE, TRUNCATE as postgres owner (Prisma) and service role | all raise errors; rows unchanged | tests/db/audit-log.test.ts | done |
+| E29 | 01 | Storage: Northwind staff uploads `<northwind_org>/a.pdf`; uploads `<beta_org>/a.pdf` | first ok; second denied | tests/storage/slips.test.ts | done |
+| E30 | 01 | Storage: tenant upload, tenant read/list, anon read/list, Beta manager read Northwind slip | all denied | tests/storage/slips.test.ts | done |
+| E31 | 01 | Storage: manager creates signed URL for own org slip; update/delete object via API | URL works; update/delete denied | tests/storage/slips.test.ts | done |
+| E32 | 01 | Bucket: upload 5 MB + 1 byte; upload text/plain | rejected by bucket | tests/storage/slips.test.ts | done |
+| E33 | 01 | API call with no token / bad token | 401 `{error}` | tests/auth/actor.test.ts | done |
+| E34 | 01 | Same API call with Bearer token and with session cookie | both authenticated | tests/auth/actor.test.ts | done |
+| E35 | 01 | Tenant sets user_metadata.role = 'manager', calls POST /api/payments/:id/approve on own lease's payment | 403 (role from memberships/tenants) | tests/auth/actor.test.ts (helper) + part 03 approve route test | built |
+| E36 | 01 | Secret key not in client bundle: grep `.next/static` for SUPABASE_SECRET_KEY value | no match | tests/security/secret-leak.test.ts | done |
+| E37 | 01 | Payments: DELETE row, change amount_sen, status approved → pending_verification (via Prisma) | trigger raises error | tests/db/payment-guards.test.ts | done |
 | E38 | 03 | Manager POST /api/leases on D-03-2 for Probe 2027-03-01..2027-03-31 rent 200000 deposit 0 | 201 `{id}`; invoices in DB equal generateSchedule output; audit row lease creation | (set in plan) | todo |
 | E39 | 03 | POST /api/leases on C-01-7 starting 2027-02-27 (Probe lease ends 2027-02-27) | 409 (inclusive overlap); starting 2027-02-28 → 201 | (set in plan) | todo |
 | E40 | 03 | Two concurrent POST /api/leases, same unit, overlapping dates (Promise.all) | one 201, one 409; one lease + its invoices in DB | (set in plan) | todo |
@@ -288,7 +288,9 @@ General rule (from the user): **do not add any rejection or validation the brief
 | E97 | 05 | Dashboard overdue count + last 6 months collections | numbers match API/invoiceStatus | (set in plan) | todo |
 | E98 | 05 | Void/reject dialogs require confirmation and reason; toasts on success and error | as stated | (set in plan) | todo |
 | E99 | 05 | Tenant phone edit via supabase-js from browser | updated; toast | (set in plan) | todo |
-| E101 | 01 | Catalog check: anon has no privilege on any public table (SELECT/INSERT/UPDATE/DELETE/TRUNCATE/REFERENCES/TRIGGER), sequence, or function in public/private; anon Data API select on every table | all false; error or 0 rows on every table | tests/db/anon-catalog.test.ts | built |
+| E101 | 01 | Catalog check: anon has no privilege on any public table (SELECT/INSERT/UPDATE/DELETE/TRUNCATE/REFERENCES/TRIGGER), sequence, or function in public/private; anon Data API select on every table | all false; error or 0 rows on every table | tests/db/anon-catalog.test.ts | done |
+| E102 | 01 | Invoice shape: rent invoice with null period_index or null period_start; deposit with period_index 0 | rejected by `invoices_kind_shape` check | tests/db/invoice-shape.test.ts | done |
+| E103 | 01 | Fresh clone: `npm install` before `.env.local` exists (postinstall `prisma generate`), then `npm run build` | install succeeds and generates the client; build passes | manual + final-check fresh clone | done |
 | E100 | 06 | REVIEW.md, DECISIONS.md, README, ai-logs present | all present with required content | (set in plan) | todo |
 
 ## Open questions
