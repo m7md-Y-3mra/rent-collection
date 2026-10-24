@@ -26,21 +26,20 @@ export function CollectionsCard({ from, to }: { from: string; to: string }) {
   const [error, setError] = useState('');
   const [retry, setRetry] = useState(0);
   useEffect(() => {
-    const controller = new AbortController();
+    let active = true;
     async function load() {
       setRows(null);
       setError('');
       try {
         const response = await fetch(
-          `/api/reports/collections?from=${from}&to=${to}`,
-          { signal: controller.signal }
+          `/api/reports/collections?from=${from}&to=${to}`
         );
         const data = await response.json().catch(() => ({}));
         if (!response.ok)
           throw new Error(data.error ?? 'Could not load collections.');
-        if (!controller.signal.aborted) setRows(data);
+        if (active) setRows(data);
       } catch (failure) {
-        if (controller.signal.aborted) return;
+        if (!active) return;
         const message =
           failure instanceof Error
             ? failure.message
@@ -50,7 +49,9 @@ export function CollectionsCard({ from, to }: { from: string; to: string }) {
       }
     }
     void load();
-    return () => controller.abort();
+    return () => {
+      active = false;
+    };
   }, [from, to, retry]);
   return (
     <Card>

@@ -78,7 +78,7 @@ export default function LoginPage() {
                 {error}
               </p>
             )}
-            <Button className="w-full" disabled={pending}>
+            <Button type="submit" className="w-full" disabled={pending}>
               {pending ? 'Signing in…' : 'Sign in'}
             </Button>
           </form>
