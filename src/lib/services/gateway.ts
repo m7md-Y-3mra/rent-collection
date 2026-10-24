@@ -89,3 +89,9 @@ export async function handleGatewayWebhook(raw: string): Promise<{ status: numbe
     throw error;
   }
 }
+
+export async function getBillForViewer(actor: Actor, billId: string) {
+  const bill = await prisma.gateway_bills.findUnique({ where: { id: billId }, include: { leases: true } });
+  if (!bill || !canSeeLease(actor, { orgId: bill.org_id, tenantId: bill.leases.tenant_id })) return null;
+  return { id: bill.id, status: bill.status, amountSen: Number(bill.amount_sen) };
+}
