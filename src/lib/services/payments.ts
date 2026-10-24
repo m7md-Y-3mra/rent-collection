@@ -48,7 +48,7 @@ export async function recordPayment(actor: Actor, leaseId: string, body: unknown
   if (!isStaffOrManagerOf(actor, lease.org_id)) throw new HttpError(403, 'Forbidden');
   try {
     const value = objectBody(body);
-    if (typeof value.amountSen !== 'number' || !Number.isInteger(value.amountSen) || value.amountSen <= 0) {
+    if (typeof value.amountSen !== 'number' || !Number.isSafeInteger(value.amountSen) || value.amountSen <= 0) {
       throw new HttpError(400, 'Amount must be a positive integer');
     }
     if (value.method !== 'cash' && value.method !== 'bank_transfer') throw new HttpError(400, 'Invalid payment method');

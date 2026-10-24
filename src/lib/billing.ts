@@ -85,10 +85,10 @@ export function generateSchedule(lease: {
   const start = parseIsoDate(startDate);
   const end = toDayNumber(parseIsoDate(endDate));
   if (end < toDayNumber(start)) throw new Error('End date must not precede start date');
-  if (typeof monthlyRentSen !== 'number' || !Number.isInteger(monthlyRentSen) || monthlyRentSen <= 0) {
+  if (typeof monthlyRentSen !== 'number' || !Number.isSafeInteger(monthlyRentSen) || monthlyRentSen <= 0) {
     throw new Error('Monthly rent must be a positive integer');
   }
-  if (typeof depositSen !== 'number' || !Number.isInteger(depositSen) || depositSen < 0) {
+  if (typeof depositSen !== 'number' || !Number.isSafeInteger(depositSen) || depositSen < 0) {
     throw new Error('Deposit must be a non-negative integer');
   }
 

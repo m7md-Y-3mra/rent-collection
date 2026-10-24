@@ -77,20 +77,44 @@ export function toPortalView(rows: PortalTenantRow[], now: Date) {
     })),
   }));
 }
+// Blank clears the phone. Otherwise: an optional leading +, then digits, spaces, dashes or
+// brackets, at most 30 characters (tenants_phone_check), with at least one digit.
+export function normalizePhone(
+  input: string
+): { ok: true; phone: string | null } | { ok: false; message: string } {
+  const phone = input.trim();
+  if (phone === '') return { ok: true, phone: null };
+  if (phone.length > 30)
+    return { ok: false, message: 'Phone number must be at most 30 characters.' };
+  if (!/^\+?[0-9 ()-]+$/.test(phone) || !/[0-9]/.test(phone))
+    return {
+      ok: false,
+      message: 'Use digits, spaces, dashes or brackets, with an optional leading +.',
+    };
+  return { ok: true, phone };
+}
+
 export async function updateOwnPhone(
   client: SupabaseClient,
   tenantId: string,
-  phone: string
+  input: string
 ) {
+  const normalized = normalizePhone(input);
+  if (!normalized.ok) return normalized;
   const { data, error } = await client
     .from('tenants')
-    .update({ phone: phone === '' ? null : phone })
+    .update({ phone: normalized.phone })
     .eq('id', tenantId)
     .select('phone');
-  if (error || !data?.length)
+  if (error)
     return {
       ok: false as const,
-      message: error?.message ?? 'Phone was not updated. Please sign in again.',
+      message: 'Could not save your phone number. Try again.',
+    };
+  if (!data?.length)
+    return {
+      ok: false as const,
+      message: 'Phone was not updated. Please sign in again.',
     };
   return { ok: true as const, phone: data[0].phone as string | null };
 }
