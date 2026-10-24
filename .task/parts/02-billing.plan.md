@@ -94,8 +94,8 @@ Tests import from `../../src/lib/billing` with a relative path, so they do not d
   - "invalid inputs throw" (`""`, `"   "`, `"-5"`, `"1.234"`, `"1e3"`, `"RM 10"`, `"1,23"`, `"1,5000"`, `",500"`, `"1."`, `".5"`, `"1 000"`, `"12,34.5"`, `"+5"`, `"1,234.5.6"`) → E18
 
 ## Steps
-- [ ] 1. Prerequisite: `package.json` with `vitest` exists (part 01, steps 1–2). If it does not exist yet, wait, or write the code and tests first and run them once it does.
-- [ ] 2. Write the four test files. `npx vitest run tests/billing` fails because the module is missing.
+- [x] 1. Prerequisite: `package.json` with `vitest` exists (part 01, steps 1–2). If it does not exist yet, wait, or write the code and tests first and run them once it does.
+- [x] 2. Write the four test files. `npx vitest run tests/billing` fails because the module is missing.
 - [ ] 3. Write `src/lib/billing.ts` until `npx vitest run tests/billing` passes.
 - [ ] 4. Write `scripts/test-billing-tz.mjs` and the `test:billing` script. `npm run test:billing` passes all three runs.
 - [ ] 5. `npx tsc --noEmit` passes (strict, no `any`).
