@@ -124,8 +124,8 @@ group by m order by m
 - [x] 2. Read `node_modules/next/dist/docs/` pages on route handlers and on page `searchParams`/`notFound`.
 - [x] 3. Add `gateway-sim.mjs` and `tests/helpers/gateway.ts`.
 - [x] 4. Write all test files above; they fail on missing modules.
-- [ ] 5. Pure helpers (`signature`, `paid-at`, `due-now`, `bill-id`); E79, E81 pass.
-- [ ] 6. `services/reports.ts` + collections route; E72–E75 pass (run `ensureSeeded()` path after `db reset`).
+- [x] 5. Pure helpers (`signature`, `paid-at`, `due-now`, `bill-id`); E79, E81 pass.
+- [x] 6. `services/reports.ts` + collections route; E72–E75 pass (run `ensureSeeded()` path after `db reset`).
 - [ ] 7. `createGatewayBill` + route; E76–E78, E80 pass.
 - [ ] 8. `handleGatewayWebhook` + route; E82–E91, E93 pass.
 - [ ] 9. `getBillForViewer` + `/payments/return` page; E92 passes; `npm run build` passes.
