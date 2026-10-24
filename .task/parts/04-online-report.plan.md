@@ -120,10 +120,10 @@ group by m order by m
 - `tests/gateway/return.test.ts` — "return page service reads pending, writes nothing" (bill `updated_at`, `status`, payment count unchanged; other tenant → null) → E92
 
 ## Steps
-- [ ] 1. Prerequisite: part 03 reviewed and merged to `main`. In worktree `/home/m7md/a/task-part-04`: `git merge main` into `feat/part-04-online-report` (no rebase). Resolve TASK.md conflicts by keeping both sides (part 03 owns its rows, part 04 owns E72–E93 and its Parts row). `npx supabase db reset` → `npm test` green.
-- [ ] 2. Read `node_modules/next/dist/docs/` pages on route handlers and on page `searchParams`/`notFound`.
-- [ ] 3. Add `gateway-sim.mjs` and `tests/helpers/gateway.ts`.
-- [ ] 4. Write all test files above; they fail on missing modules.
+- [x] 1. Prerequisite: part 03 reviewed and merged to `main`. In worktree `/home/m7md/a/task-part-04`: `git merge main` into `feat/part-04-online-report` (no rebase). Resolve TASK.md conflicts by keeping both sides (part 03 owns its rows, part 04 owns E72–E93 and its Parts row). `npx supabase db reset` → `npm test` green.
+- [x] 2. Read `node_modules/next/dist/docs/` pages on route handlers and on page `searchParams`/`notFound`.
+- [x] 3. Add `gateway-sim.mjs` and `tests/helpers/gateway.ts`.
+- [x] 4. Write all test files above; they fail on missing modules.
 - [ ] 5. Pure helpers (`signature`, `paid-at`, `due-now`, `bill-id`); E79, E81 pass.
 - [ ] 6. `services/reports.ts` + collections route; E72–E75 pass (run `ensureSeeded()` path after `db reset`).
 - [ ] 7. `createGatewayBill` + route; E76–E78, E80 pass.
