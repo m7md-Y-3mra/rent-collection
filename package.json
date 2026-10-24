@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
+    "test:billing": "node scripts/test-billing-tz.mjs",
     "test:security": "next build && vitest run -c vitest.security.config.ts",
     "typecheck": "tsc --noEmit",
     "postinstall": "prisma generate"
