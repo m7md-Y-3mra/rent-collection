@@ -195,8 +195,8 @@ All route tests run on `createWorld()` data with leases created through the rout
 ## Steps
 - [x] 1. Prerequisite: part 02 is reviewed and merged to `main`. Branch `feat/part-03-leases-payments` from `main`. Run `npx supabase db reset`; `npm test` passes.
 - [x] 2. Install `tsx` (exact version) and add the `seed` script. Write a stub `scripts/seed.ts` that imports `@/lib/prisma` and prints the organization count. `npm run seed` works on Node 20. If the flags fail, stop and report; do not guess.
-- [ ] 3. Write `ids`, `db-dates`, `instant`, `db-errors` and `locks`, plus `tests/helpers/{http,leasing,seeded}.ts`.
-- [ ] 4. Write the test files above. They fail on missing modules.
+- [x] 3. Write `ids`, `db-dates`, `instant`, `db-errors` and `locks`, plus `tests/helpers/{http,leasing,seeded}.ts`.
+- [x] 4. Write the test files above. They fail on missing modules.
 - [ ] 5. Write `allocation.ts`, `services/leases.ts` and the two lease routes. The lease tests pass. Log the real 23P01 error shape once before writing `isExclusionViolation`.
 - [ ] 6. Write `services/payments.ts` and the four payment routes. The record, decide and allocation tests pass.
 - [ ] 7. Write the full `scripts/seed.ts`. After `db reset` and `npm run seed`, `tests/seed` passes.
