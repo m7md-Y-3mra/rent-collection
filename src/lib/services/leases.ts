@@ -91,3 +91,9 @@ export async function getLease(actor: Actor, leaseId: string) {
       method: item.method, status: item.status, receivedAt: item.received_at.toISOString() })),
   };
 }
+
+export async function listLeases(actor: Actor) {
+  if (actor.kind !== 'member') throw new HttpError(403, 'Forbidden');
+  const rows = await prisma.leases.findMany({ where: { org_id: actor.orgId }, include: { units: true, tenants: true }, orderBy: [{ start_date: 'desc' }] });
+  return rows.map(row => ({ id: row.id, unitName: row.units.name, tenantName: row.tenants.full_name, startDate: fromDbDate(row.start_date), endDate: fromDbDate(row.end_date), monthlyRentSen: Number(row.monthly_rent_sen) }));
+}

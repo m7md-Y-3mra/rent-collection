@@ -1,0 +1,3 @@
+export async function submitDecision(fetchFn:typeof fetch,paymentId:string,action:'approve'|'reject'|'void',reason?:string):Promise<{ok:boolean;message:string}> {
+ try {const response=await fetchFn(`/api/payments/${paymentId}/${action}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(action==='approve'?{}:{reason})});if(response.ok)return {ok:true,message:`Payment ${action==='approve'?'approved':action==='reject'?'rejected':'voided'}.`};const data=await response.json();return {ok:false,message:typeof data.error==='string'?data.error:`Request failed (${response.status}).`};}catch{return {ok:false,message:'Could not reach the server. Try again.'};}
+}
